@@ -79,7 +79,8 @@ p,h2,.result{text-wrap:pretty}
 .btn:hover,.btn:focus-visible{border-color:#ffffff55;outline:none}
 .btn:disabled{opacity:.6;cursor:wait}
 .btn.prim{background:var(--accent);color:#1a1205;border-color:var(--accent);font-size:1.1rem;padding:14px 40px}
-.screen{background:var(--panel);border:1px solid #ffffff14;border-radius:var(--radius);padding:36px 32px;text-align:center;box-shadow:0 20px 60px #000a}
+#scope{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.screen{background:rgba(26,26,35,.86);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid #ffffff14;border-radius:var(--radius);padding:36px 32px;text-align:center;box-shadow:0 20px 60px #000a}
 @media (max-width:520px){.screen{padding:28px 18px}}
 .screen .brand{font-size:clamp(2rem,9vw,3.2rem);margin:0 0 18px}
 .screen h2{margin:0 0 12px;font-size:clamp(1.8rem,5vw,2.4rem)}
@@ -123,6 +124,7 @@ footer a{color:var(--muted)}
 </style>
 </head>
 <body class="on-start">
+<canvas id="scope" aria-hidden="true"></canvas>
 
 <header>
   <h1>¿De qué me suena?</h1>
@@ -235,7 +237,7 @@ footer a{color:var(--muted)}
     <button class="btn prim" id="againBtn">Otra partida</button>
     <button class="btn" id="menuBtn">Cambiar ajustes</button>
   </section>
-  <audio id="audio" preload="auto"></audio>
+  <audio id="audio" preload="auto" crossorigin="anonymous"></audio>
 </main>
 
 <footer>Escuchas de Last.fm · fragmentos de Deezer e iTunes · <a href="https://github.com/volteret4/de_que_me_suena">código</a></footer>
@@ -263,6 +265,67 @@ let pool = [], queue = [], round = 0, score = 0, played = [];
 let lfLabel = "", bestKey = "";
 let current = null, startTime = 0, raf = 0, answered = true, clockLeft = 0, multiplier = 1, roundId = 0;
 const audio = $("audio");
+
+/* ---------- Osciloscopio de fondo: dibuja la onda de lo que suena ---------- */
+const scope = { cv: $("scope"), g: null, ctx: null, an: null, buf: null, raf: 0, idle: 0, dpr: 1 };
+scope.g = scope.cv.getContext("2d");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+function scopeResize(){
+  scope.dpr = Math.min(2, devicePixelRatio || 1);
+  scope.cv.width = innerWidth * scope.dpr; scope.cv.height = innerHeight * scope.dpr;
+  scope.g.fillStyle = "#0f0f14"; scope.g.fillRect(0, 0, scope.cv.width, scope.cv.height);
+  if (reduceMotion.matches || !scope.raf) scopeFrame(true);
+}
+// hay que crearlo dentro de un clic; si el navegador no deja, el juego sigue sin osciloscopio
+function scopeInit(){
+  if (scope.ctx) { if (scope.ctx.state === "suspended") scope.ctx.resume(); return; }
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    scope.ctx = new AC();
+    scope.an = scope.ctx.createAnalyser();
+    scope.an.fftSize = 2048; scope.an.smoothingTimeConstant = 0;
+    scope.ctx.createMediaElementSource(audio).connect(scope.an);
+    scope.an.connect(scope.ctx.destination);
+    scope.buf = new Float32Array(scope.an.fftSize);
+  } catch { scope.ctx = scope.an = null; }
+}
+function scopeFrame(still){
+  const { g, cv, buf, dpr } = scope, w = cv.width, h = cv.height;
+  // rastro: cada fotograma tapa un poco el anterior en vez de borrarlo
+  g.fillStyle = still ? "#0f0f14" : "rgba(15,15,20,.3)";
+  g.fillRect(0, 0, w, h);
+  const n = 1024, mid = h / 2, amp = h * 0.24;
+  let start = 0;
+  const live = scope.an && !audio.paused && !still;
+  if (live) {
+    scope.an.getFloatTimeDomainData(buf);
+    // disparo: empieza en un cruce por cero ascendente para que la onda no baile
+    for (let i = 1; i < buf.length - n; i++) if (buf[i - 1] < 0 && buf[i] >= 0) { start = i; break; }
+  }
+  const val = i => live ? buf[start + i] : (reduceMotion.matches ? Math.sin(i / n * Math.PI * 6) * 0.04 : 0);
+  const step = Math.max(1, Math.floor(n / (w / (2 * dpr))));
+  g.beginPath();
+  for (let i = 0; i < n; i += step) {
+    const x = i / (n - 1) * w, y = mid + val(i) * amp;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.lineJoin = "round";
+  g.strokeStyle = "rgba(255,176,46,.07)"; g.lineWidth = 9 * dpr; g.stroke();   // brillo
+  g.strokeStyle = "rgba(255,176,46,.35)"; g.lineWidth = 2 * dpr; g.stroke();
+}
+function scopeLoop(){
+  scope.raf = 0;
+  if (reduceMotion.matches) return scopeFrame(true);
+  scopeFrame(false);
+  scope.idle = audio.paused ? scope.idle + 1 : 0;
+  if (scope.idle < 45) scope.raf = requestAnimationFrame(scopeLoop);   // en silencio se apaga solo
+}
+function scopeStart(){ scope.idle = 0; if (!scope.raf && !reduceMotion.matches) scope.raf = requestAnimationFrame(scopeLoop); }
+audio.addEventListener("play", scopeStart);
+audio.addEventListener("pause", scopeStart);
+addEventListener("resize", scopeResize);
+reduceMotion.addEventListener?.("change", scopeResize);
+scopeResize();
 
 /* ---------- Ajustes ---------- */
 function weightLabel(w){ return w === 0 ? "neutral" : (w < 0 ? `menos escuchadas ×${(2 ** (-w / 100)).toFixed(1)}` : `más escuchadas ×${(2 ** (w / 100)).toFixed(1)}`); }
@@ -388,7 +451,7 @@ function resolve(t){
 const buffered = new Map();
 function buffer(t){
   if (!t.preview || buffered.has(t.k)) return;
-  const a = new Audio(); a.preload = "auto"; a.src = t.preview; buffered.set(t.k, a);
+  const a = new Audio(); a.crossOrigin = "anonymous"; a.preload = "auto"; a.src = t.preview; buffered.set(t.k, a);
   if (buffered.size > 8) buffered.delete(buffered.keys().next().value);
 }
 
@@ -405,6 +468,7 @@ async function startClicked(){
   if ($("lfPeriod").value === "rango" && (!$("lfFrom").value || !$("lfTo").value || $("lfFrom").value > $("lfTo").value)) {
     $("err").textContent = "Elige dos fechas, la primera antes que la segunda"; return;
   }
+  scopeInit();
   audio.src = SILENCIO; audio.play().catch(() => {});     // desbloquea el audio con este clic
   const btn = $("startBtn"); btn.disabled = true; btn.textContent = "Cargando canciones…";
   if (!store.get("dqms_seen")) {
