@@ -4,7 +4,7 @@ Juego web: suena un trozo de una canción de tus escuchas de Last.fm y hay que a
 
 - **Canciones**: `user.getTopTracks` de Last.fm (semana, mes, 3/6/12 meses o todas) o `user.getWeeklyTrackChart` entre dos fechas.
 - **Audio**: fragmentos de 30 s de Deezer (JSONP) y, si no hay, de iTunes.
-- **Fondo**: osciloscopio con la onda de lo que suena (Web Audio `AnalyserNode` + canvas; Deezer e iTunes sirven los fragmentos con CORS).
+- **Fondo**: bandas de frecuencia (por defecto) u osciloscopio con lo que suena (Web Audio `AnalyserNode` + canvas; Deezer e iTunes sirven los fragmentos con CORS).
 - **Guardado**: ajustes, récords y canciones sin fragmento en `localStorage`.
 
 Es una página estática para GitHub Pages, sin servidor ni ficheros que subir.
