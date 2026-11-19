@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿De qué me suena?</title>
+<meta name="description" content="Suena un trozo de una canción de tus escuchas de Last.fm: adivina cuál es entre 4.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="5d84fd6c-0760-4a0c-a2d0-ffabb82179f5"></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+<style>
+:root{
+  --bg:#0f0f14; --panel:#1a1a23; --panel2:#24242f; --text:#f2f2f5; --muted:#9a9aab;
+  --accent:#ffb02e; --ok:#2ecc71; --bad:#ff4d5e; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+header{width:100%;max-width:560px;padding:20px 16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+h1,.brand{margin:0;font-family:"Bungee",system-ui,sans-serif;font-weight:400;letter-spacing:.04em;line-height:1.1;color:var(--accent);text-shadow:0 2px 0 #7a4f00,0 0 18px #ffb02e44;text-wrap:balance}
+h1{font-size:clamp(1.4rem,6vw,2rem)}
+.stats{display:flex;gap:14px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.95rem}
+.stats span{white-space:nowrap}
+.stats b{color:var(--text)}
+.stats .clock b{color:var(--accent)}
+.stats .clock.low b{color:var(--bad)}
+@media (max-width:440px){.stats{gap:10px;font-size:.88rem}}
+main{width:100%;max-width:560px;padding:0 16px 32px;flex:1}
+body.on-start header{display:none}
+body.on-start main{padding-top:40px}
+p,h2,.result{text-wrap:pretty}
+.hidden{display:none!important}
+
+/* disco que gira mientras suena */
+.stage{position:relative;margin:14px auto 0;width:min(100%,340px);aspect-ratio:1}
+.vinyl{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle at 50% 50%,#111 0 2px,#1b1b22 2px 4px);
+  box-shadow:0 10px 40px #0008,inset 0 0 0 2px #ffffff10;animation:spin 2.2s linear infinite;animation-play-state:paused}
+.vinyl::after{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 30deg,#ffffff00 0 20%,#ffffff14 25%,#ffffff00 30% 70%,#ffffff10 75%,#ffffff00 80%)}
+.stage.playing .vinyl{animation-play-state:running}
+.label{position:absolute;inset:31%;border-radius:50%;background:var(--accent);display:grid;place-items:center;overflow:hidden;z-index:1;box-shadow:0 0 0 3px #0006}
+.label span{font-family:"Bungee",system-ui;font-size:clamp(2rem,9vw,3rem);color:#1a1205}
+.label img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s}
+.stage.revealed .label img.ok{opacity:1}
+.stage .loading{position:absolute;left:0;right:0;bottom:-30px;text-align:center;color:var(--muted);font-size:.9rem;cursor:default}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.vinyl{animation:none}}
+.eq{display:flex;gap:4px;justify-content:center;align-items:flex-end;height:22px;margin:36px 0 0}
+.eq i{width:5px;background:var(--accent);border-radius:2px;height:4px}
+.stage.playing+.eq i{animation:eq .9s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:-.2s!important}.eq i:nth-child(3){animation-delay:-.5s!important}.eq i:nth-child(4){animation-delay:-.1s!important}.eq i:nth-child(5){animation-delay:-.7s!important}
+@keyframes eq{0%,100%{height:4px}50%{height:22px}}
+
+.bar{height:6px;background:var(--panel2);border-radius:3px;margin:14px 0;overflow:hidden}
+.bar div{height:100%;width:100%;background:var(--accent);transform-origin:left;transform:scaleX(1)}
+.potential{text-align:center;color:var(--muted);font-size:.9rem;margin:-6px 0 12px;font-variant-numeric:tabular-nums}
+.potential b{color:var(--accent)}
+.potential i{font-style:normal;margin-left:6px;padding:1px 6px;border-radius:999px;background:var(--panel2);color:var(--text);font-size:.8rem}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.options{grid-template-columns:1fr}}
+.opt{background:var(--panel);color:var(--text);border:2px solid var(--panel2);border-radius:12px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit;min-height:64px;transition:background .15s,border-color .15s,transform .05s}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:active:not(:disabled){transform:scale(.98)}
+.opt small{display:block;color:var(--muted);font-size:.8rem;margin-bottom:2px}
+.opt strong{font-weight:600}
+.opt .k{float:right;color:var(--muted);font-size:.75rem;border:1px solid var(--panel2);border-radius:4px;padding:0 5px;margin-left:6px}
+.opt:disabled{cursor:default}
+.opt.ok{background:#173d27;border-color:var(--ok)}
+.opt.bad{background:#46161c;border-color:var(--bad)}
+.opt.dim{opacity:.45}
+.opt.wc{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center;padding:8px 12px 8px 8px}
+.opt .th{width:64px;height:64px;border-radius:8px;background:var(--panel2);overflow:hidden}
+.opt .th img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
+.opt .th img.ok{opacity:1}
+.opt .tx{min-width:0}
+.result{text-align:center;margin:14px 0 4px;min-height:1.5em;font-weight:600}
+.result.ok{color:var(--ok)} .result.bad{color:var(--bad)}
+.btn{display:block;margin:12px auto 0;background:var(--bg);color:#fff;border:2px solid var(--panel2);border-radius:999px;padding:12px 28px;font:inherit;font-weight:700;cursor:pointer}
+.btn:hover,.btn:focus-visible{border-color:#ffffff55;outline:none}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.prim{background:var(--accent);color:#1a1205;border-color:var(--accent);font-size:1.1rem;padding:14px 40px}
+.screen{background:var(--panel);border:1px solid #ffffff14;border-radius:var(--radius);padding:36px 32px;text-align:center;box-shadow:0 20px 60px #000a}
+@media (max-width:520px){.screen{padding:28px 18px}}
+.screen .brand{font-size:clamp(2rem,9vw,3.2rem);margin:0 0 18px}
+.screen h2{margin:0 0 12px;font-size:clamp(1.8rem,5vw,2.4rem)}
+.screen p{color:#c4c4d0;margin:10px auto;font-size:1.05rem;max-width:34em;text-wrap:balance}
+.big{font-size:3rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;margin:8px 0}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--bg);border-radius:999px;padding:4px;gap:4px}
+.seg button{background:none;border:0;color:var(--muted);font:inherit;padding:6px 12px;font-size:.88rem;border-radius:999px;cursor:pointer}
+.seg button.active{background:var(--panel2);color:var(--text);font-weight:600}
+.lf{display:grid;gap:10px;max-width:320px;margin:16px auto 0;text-align:left}
+.lf label,.set label,.set .lbl{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
+.lf input,.lf select{background:var(--bg);color:var(--text);border:2px solid var(--panel2);border-radius:10px;padding:10px 12px;font:inherit;width:100%}
+.lf input:focus,.lf select:focus{outline:none;border-color:var(--accent)}
+.lf .fechas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.err{color:var(--bad)!important;min-height:1.2em}
+.aviso{color:var(--accent)!important;font-size:.95rem!important}
+details.settings{margin:16px auto 0;max-width:420px;text-align:left;background:var(--bg);border-radius:12px;padding:4px 14px}
+details.settings summary{cursor:pointer;padding:10px 0;color:var(--text);font-weight:600;list-style:none}
+details.settings summary::-webkit-details-marker{display:none}
+details.settings summary::before{content:"⚙️ "}
+details.settings summary span{float:right;color:var(--muted);font-weight:400;font-size:.8rem;margin-top:2px}
+.set{display:grid;gap:14px;padding:4px 0 14px}
+.set .row{display:flex;justify-content:space-between;gap:8px}
+.set .row b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
+.set input[type=range]{width:100%;accent-color:var(--accent)}
+.set .ends{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:-2px}
+.summary{display:grid;gap:6px;margin:16px 0;text-align:left}
+.srow{display:grid;grid-template-columns:60px 1fr auto;gap:10px;align-items:center;background:var(--bg);border-radius:10px;padding:6px;border-left:4px solid var(--bad)}
+.srow.ok{border-left-color:var(--ok)}
+.srow img,.srow .noimg{width:60px;height:60px;object-fit:cover;border-radius:6px;display:block;background:var(--panel2)}
+.srow .t{min-width:0}
+.srow .t strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92rem}
+.srow .t small{display:block;color:var(--muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .t .meta{font-variant-numeric:tabular-nums;margin-top:1px;white-space:normal}
+.srow .m{text-align:right;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.srow .m b{display:block;font-size:1rem;color:var(--ok)}
+.srow:not(.ok) .m b{color:var(--bad)}
+.srow button{background:none;border:1px solid var(--panel2);color:var(--muted);border-radius:999px;width:30px;height:30px;cursor:pointer;margin-top:4px}
+.srow button:hover{color:var(--text);border-color:var(--accent)}
+footer{color:var(--muted);font-size:.8rem;padding:16px;text-align:center}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body class="on-start">
+
+<header>
+  <h1>¿De qué me suena?</h1>
+  <div class="stats">
+    <span id="roundStat">Ronda <b id="round">0</b><span id="ofTotal">/<b id="total">10</b></span></span>
+    <span id="clockStat" class="clock hidden">⏱ <b id="clock">0:00</b></span>
+    <span>Puntos <b id="score">0</b></span>
+  </div>
+</header>
+
+<main>
+  <section id="start" class="screen">
+    <h2 class="brand">¿De qué me suena?</h2>
+    <p>Suena un trozo de una canción que has escuchado. Adivina cuál es entre 4 opciones.</p>
+    <p>Cuanto antes aciertes, más puntos. Teclas <b>1–4</b> para responder, <b>Enter</b> para seguir.</p>
+    <form id="lfForm" class="lf" onsubmit="return false">
+      <label>Usuario de Last.fm<input id="lfUser" name="username" placeholder="tu_usuario" autocapitalize="off" spellcheck="false"></label>
+      <label>Periodo
+        <select id="lfPeriod">
+          <option value="7day">Última semana</option>
+          <option value="1month">Último mes</option>
+          <option value="3month">Últimos 3 meses</option>
+          <option value="6month">Últimos 6 meses</option>
+          <option value="12month">Último año</option>
+          <option value="overall" selected>Todas mis escuchas</option>
+          <option value="rango">Entre dos fechas…</option>
+        </select>
+      </label>
+      <div class="fechas hidden" id="fechas">
+        <label>Desde<input type="date" id="lfFrom"></label>
+        <label>Hasta<input type="date" id="lfTo"></label>
+      </div>
+    </form>
+
+    <details class="settings" id="settings">
+      <summary>Ajustes <span id="setSummary"></span></summary>
+      <div class="set">
+        <label><span class="row">Canciones entre las que elegir <b id="vPool"></b></span>
+          <input type="range" id="sPool" min="20" max="500" step="10">
+          <span class="ends"><span>Solo las que más escuchas</span><span>También las raras</span></span>
+        </label>
+        <div class="lbl">Las otras 3 opciones
+          <div class="seg" id="diffSeg">
+            <button data-v="easy">Al azar</button>
+            <button data-v="hard">Del mismo artista si se puede</button>
+          </div>
+        </div>
+        <div class="lbl">Carátulas en las opciones
+          <div class="seg" id="coverSeg">
+            <button data-v="no">No</button>
+            <button data-v="yes">Sí, más fácil</button>
+          </div>
+        </div>
+        <div class="lbl">El trozo empieza
+          <div class="seg" id="startSeg">
+            <button data-v="begin">Al principio del fragmento</button>
+            <button data-v="random">En cualquier punto</button>
+          </div>
+        </div>
+        <label><span class="row">Tiempo por canción <b id="vRoundTime"></b></span>
+          <input type="range" id="sRoundTime" min="3" max="30" step="1">
+        </label>
+        <div class="lbl">Tipo de partida
+          <div class="seg" id="gameSeg">
+            <button data-v="rounds">Por rondas</button>
+            <button data-v="clock">Contrarreloj</button>
+          </div>
+        </div>
+        <label id="rowRounds"><span class="row">Número de rondas <b id="vRounds"></b></span>
+          <input type="range" id="sRounds" min="3" max="50" step="1">
+        </label>
+        <label id="rowTotal"><span class="row">Tiempo total <b id="vTotal"></b></span>
+          <input type="range" id="sTotal" min="30" max="600" step="15">
+        </label>
+        <label><span class="row">Penalización por fallo o tiempo agotado <b id="vPenalty"></b></span>
+          <input type="range" id="sPenalty" min="0" max="1000" step="50">
+        </label>
+        <label><span class="row">Premio según escuchas <b id="vWeight"></b></span>
+          <input type="range" id="sWeight" min="-100" max="100" step="10">
+          <span class="ends"><span>← más a las menos escuchadas</span><span>más a las más escuchadas →</span></span>
+        </label>
+      </div>
+    </details>
+
+    <p id="best"></p>
+    <p id="aviso" class="aviso hidden"></p>
+    <p id="err" class="err"></p>
+    <button class="btn prim" id="startBtn">Jugar</button>
+  </section>
+
+  <section id="game" class="hidden">
+    <div class="stage" id="stage">
+      <div class="vinyl"></div>
+      <div class="label"><span>?</span><img id="cover" alt=""></div>
+      <div class="loading" id="loading">Cargando…</div>
+    </div>
+    <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="potential">Puntos en juego: <b id="potential">1000</b><i id="mult" class="hidden"></i></div>
+    <div class="options" id="options"></div>
+    <div class="result" id="result"></div>
+    <button class="btn hidden" id="nextBtn">Siguiente</button>
+  </section>
+
+  <section id="end" class="screen hidden">
+    <h2>Fin de la partida</h2>
+    <div class="big" id="final">0</div>
+    <p id="endMsg"></p>
+    <div class="summary" id="summary"></div>
+    <button class="btn prim" id="againBtn">Otra partida</button>
+    <button class="btn" id="menuBtn">Cambiar ajustes</button>
+  </section>
+  <audio id="audio" preload="auto"></audio>
+</main>
+
+<footer>Escuchas de Last.fm · fragmentos de Deezer e iTunes · <a href="https://github.com/volteret4/de_que_me_suena">código</a></footer>
+
+<script>
+const MAX_POINTS = 1000, MIN_POINTS = 100;
+const LASTFM_API_KEY = "de2f8bfff3ddd42fb7fc1c47ccfa945a";
+const DEFAULTS = { pool: 150, diff: "easy", covers: "no", start: "random", roundTime: 15, game: "rounds", rounds: 10, total: 120, penalty: 0, weight: 0 };
+const SILENCIO = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+
+const $ = id => document.getElementById(id);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const store = { get(k){ try { return localStorage.getItem(k); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch {} } };
+const fmtClock = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${s / 60 | 0}:${String(s % 60).padStart(2, "0")}`; };
+const fmtNum = n => n.toLocaleString("es-ES");
+// para comparar títulos: sin acentos, sin «(Remastered 2011)», «- Live», «feat.»…
+const nk = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/&/g, "and").replace(/[^a-z0-9]/g, "");
+const clean = s => String(s).replace(/\s*[([][^)\]]*[)\]]/g, "").replace(/\s+-\s+.*(remaster|version|live|mix|edit|mono|stereo|demo|take).*$/i, "").replace(/\s+(feat|ft)\.?\s.*$/i, "").trim() || String(s);
+const fechaLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+let S = { ...DEFAULTS };
+try { Object.assign(S, JSON.parse(store.get("dqms_settings") || "{}")); } catch {}
+
+let pool = [], queue = [], round = 0, score = 0, played = [];
+let lfLabel = "", bestKey = "";
+let current = null, startTime = 0, raf = 0, answered = true, clockLeft = 0, multiplier = 1, roundId = 0;
+const audio = $("audio");
+
+/* ---------- Ajustes ---------- */
+function weightLabel(w){ return w === 0 ? "neutral" : (w < 0 ? `menos escuchadas ×${(2 ** (-w / 100)).toFixed(1)}` : `más escuchadas ×${(2 ** (w / 100)).toFixed(1)}`); }
+function syncSettings(){
+  for (const [seg, key] of [["diffSeg", "diff"], ["coverSeg", "covers"], ["startSeg", "start"], ["gameSeg", "game"]])
+    document.querySelectorAll(`#${seg} button`).forEach(b => b.classList.toggle("active", b.dataset.v === S[key]));
+  $("sPool").value = S.pool; $("vPool").textContent = S.pool;
+  $("sRoundTime").value = S.roundTime; $("vRoundTime").textContent = S.roundTime + " s";
+  $("sRounds").value = S.rounds; $("vRounds").textContent = S.rounds;
+  $("sTotal").value = S.total; $("vTotal").textContent = fmtClock(S.total * 1000);
+  $("sPenalty").value = S.penalty; $("vPenalty").textContent = S.penalty ? `−${S.penalty}` : "ninguna";
+  $("sWeight").value = S.weight; $("vWeight").textContent = weightLabel(S.weight);
+  $("rowRounds").classList.toggle("hidden", S.game !== "rounds");
+  $("rowTotal").classList.toggle("hidden", S.game !== "clock");
+  $("setSummary").textContent = `${S.roundTime} s · ${S.diff === "hard" ? "difícil" : "fácil"}${S.covers === "yes" ? " · carátulas" : ""} · ${S.game === "rounds" ? S.rounds + " rondas" : fmtClock(S.total * 1000)}`;
+  store.set("dqms_settings", JSON.stringify(S));
+  showBest();
+}
+function bindSeg(id, key){ document.querySelectorAll(`#${id} button`).forEach(b => b.onclick = e => { e.preventDefault(); S[key] = b.dataset.v; syncSettings(); }); }
+function bindRange(id, key){ $(id).oninput = () => { S[key] = +$(id).value; syncSettings(); }; }
+bindSeg("diffSeg", "diff"); bindSeg("coverSeg", "covers"); bindSeg("startSeg", "start"); bindSeg("gameSeg", "game");
+bindRange("sPool", "pool"); bindRange("sRoundTime", "roundTime"); bindRange("sRounds", "rounds");
+bindRange("sTotal", "total"); bindRange("sPenalty", "penalty"); bindRange("sWeight", "weight");
+
+function periodLabel(){
+  const p = $("lfPeriod").value;
+  return p === "rango" ? `${$("lfFrom").value}_${$("lfTo").value}` : p;
+}
+function updateLabel(){ const u = $("lfUser").value.trim().toLowerCase(); lfLabel = u && `${u}_${periodLabel()}`; showBest(); }
+function recordKey(){ return `dqms_best_${lfLabel}_${S.game}_${S.diff}${S.covers === "yes" ? "_covers" : ""}`; }
+function showBest(){
+  if (!lfLabel) { $("best").textContent = ""; return; }
+  const b = store.get(recordKey()); $("best").textContent = b !== null ? `Tu récord en este modo: ${fmtNum(+b)} puntos` : "";
+}
+$("lfUser").oninput = updateLabel;
+$("lfFrom").onchange = $("lfTo").onchange = updateLabel;
+$("lfPeriod").onchange = () => { $("fechas").classList.toggle("hidden", $("lfPeriod").value !== "rango"); updateLabel(); };
+
+/* ---------- Last.fm ---------- */
+async function lfq(params){
+  const q = new URLSearchParams({ ...params, api_key: LASTFM_API_KEY, format: "json" });
+  const r = await (await fetch(`https://ws.audioscrobbler.com/2.0/?${q}`)).json();
+  if (r.error) throw new Error(r.error === 6 ? `No existe el usuario «${params.user}» en Last.fm` : r.message);
+  return r;
+}
+async function loadTracks(user, n){
+  const period = $("lfPeriod").value;
+  let list = [];
+  if (period === "rango") {
+    const from = Math.floor(new Date($("lfFrom").value + "T00:00:00").getTime() / 1000);
+    const to = Math.floor(new Date($("lfTo").value + "T23:59:59").getTime() / 1000);
+    const r = await lfq({ method: "user.getweeklytrackchart", user, from, to });
+    list = (r.weeklytrackchart?.track || []).map(t => ({ artist: t.artist["#text"], title: t.name, plays: +t.playcount || 0 }));
+    list.sort((a, b) => b.plays - a.plays);
+  } else {
+    for (let page = 1; list.length < n; page++) {
+      const r = await lfq({ method: "user.gettoptracks", user, period, limit: Math.min(n, 500), page });
+      const got = r.toptracks?.track || [];
+      list.push(...got.map(t => ({ artist: t.artist.name, title: t.name, plays: +t.playcount || 0 })));
+      if (!got.length || page >= +(r.toptracks?.["@attr"]?.totalPages || 1)) break;
+    }
+  }
+  // sin repetidos (la misma canción remasterizada cuenta como una) y sin las que ya sabemos que no tienen fragmento
+  const seen = new Set(), out = [];
+  for (const t of list) {
+    if (!t.title || !t.artist) continue;
+    t.k = nk(t.artist) + "|" + nk(clean(t.title));
+    if (seen.has(t.k) || NOPREV.has(t.k)) continue;
+    seen.add(t.k); out.push(t);
+    if (out.length >= n) break;
+  }
+  out.forEach((t, i) => t.rank = out.length > 1 ? i / (out.length - 1) : 0);
+  return out;
+}
+
+/* ---------- Fragmentos: Deezer (JSONP) y, si no, iTunes ---------- */
+let NOPREV = new Set();
+try { NOPREV = new Set(JSON.parse(store.get("dqms_noprev") || "[]")); } catch {}
+const saveNoPrev = () => store.set("dqms_noprev", JSON.stringify([...NOPREV].slice(-3000)));
+let jpN = 0;
+function jsonp(url){
+  return new Promise((res, rej) => {
+    const cb = "_dz" + (++jpN), s = document.createElement("script");
+    const fin = () => { clearTimeout(t); delete window[cb]; s.remove(); };
+    const t = setTimeout(() => { fin(); rej(new Error("timeout")); }, 8000);
+    window[cb] = d => { fin(); res(d); };
+    s.onerror = () => { fin(); rej(new Error("jsonp")); };
+    s.src = url + "&output=jsonp&callback=" + cb;
+    document.head.append(s);
+  });
+}
+function matches(t, artist, title){
+  const A = nk(t.artist), B = nk(artist || ""), X = nk(clean(t.title)), Y = nk(clean(title || ""));
+  if (!B || !Y || !(A === B || A.includes(B) || B.includes(A))) return 0;
+  return X === Y ? 2 : (X.includes(Y) || Y.includes(X)) ? 1 : 0;
+}
+const pick = (list, fa, ft, t) => list.map(x => [matches(t, fa(x), ft(x)), x]).filter(p => p[0]).sort((p, q) => q[0] - p[0])[0]?.[1] || null;
+async function fromDeezer(t){
+  const r = await jsonp("https://api.deezer.com/search?" + new URLSearchParams({ q: `${t.artist} ${clean(t.title)}`, limit: 15 }));
+  const hit = pick((r?.data || []).filter(x => x.preview), x => x.artist?.name, x => x.title, t);
+  return hit && { url: hit.preview, cover: hit.album?.cover_big || hit.album?.cover_medium, thumb: hit.album?.cover_medium, album: hit.album?.title };
+}
+async function fromItunes(t){
+  const r = await (await fetch("https://itunes.apple.com/search?" + new URLSearchParams({ term: `${t.artist} ${clean(t.title)}`, entity: "song", limit: 15 }))).json();
+  const hit = pick((r.results || []).filter(x => x.previewUrl), x => x.artistName, x => x.trackName, t);
+  return hit && { url: hit.previewUrl, cover: hit.artworkUrl100?.replace("100x100bb", "600x600bb"), thumb: hit.artworkUrl100?.replace("100x100bb", "200x200bb"), album: hit.collectionName };
+}
+const resolving = new Map();
+function resolve(t){
+  if (!resolving.has(t.k)) {
+    resolving.set(t.k, (async () => {
+      let p = null, failed = false;
+      try { p = await fromDeezer(t); } catch { failed = true; }
+      if (!p) try { p = await fromItunes(t); failed = false; } catch { failed = true; }
+      if (p) Object.assign(t, { preview: p.url, cover: p.cover, thumb: p.thumb || p.cover, album: p.album });
+      else if (!failed) { NOPREV.add(t.k); saveNoPrev(); }   // solo si de verdad no existe, no por un fallo de red
+      return !!p;
+    })());
+  }
+  return resolving.get(t.k);
+}
+// deja el audio ya descargado para que la ronda empiece al instante
+const buffered = new Map();
+function buffer(t){
+  if (!t.preview || buffered.has(t.k)) return;
+  const a = new Audio(); a.preload = "auto"; a.src = t.preview; buffered.set(t.k, a);
+  if (buffered.size > 8) buffered.delete(buffered.keys().next().value);
+}
+
+/* ---------- Partida ---------- */
+function show(id){
+  for (const s of ["start", "game", "end"]) $(s).classList.toggle("hidden", s !== id);
+  document.body.classList.toggle("on-start", id === "start");
+}
+
+async function startClicked(){
+  $("err").textContent = "";
+  const user = $("lfUser").value.trim();
+  if (!user) { $("err").textContent = "Escribe un usuario de Last.fm"; $("lfUser").focus(); return; }
+  if ($("lfPeriod").value === "rango" && (!$("lfFrom").value || !$("lfTo").value || $("lfFrom").value > $("lfTo").value)) {
+    $("err").textContent = "Elige dos fechas, la primera antes que la segunda"; return;
+  }
+  audio.src = SILENCIO; audio.play().catch(() => {});     // desbloquea el audio con este clic
+  const btn = $("startBtn"); btn.disabled = true; btn.textContent = "Cargando canciones…";
+  if (!store.get("dqms_seen")) {
+    $("aviso").textContent = "La primera vez tarda un poco: hay que buscar un fragmento de cada canción en Deezer o iTunes. Las siguientes partidas van más rápidas.";
+    $("aviso").classList.remove("hidden");
+  }
+  try {
+    const list = await loadTracks(user, S.pool);
+    if (list.length < 4) throw new Error("Ese usuario no tiene suficientes canciones escuchadas en ese periodo (mínimo 4).");
+    pool = list;
+    btn.textContent = "Buscando fragmentos…";
+    queue = shuffle([...pool]);
+    // antes de empezar, al menos dos canciones con fragmento listo
+    let ready = 0;
+    for (let i = 0; i < queue.length && ready < 2; i += 3) {
+      const res = await Promise.all(queue.slice(i, i + 3).map(resolve));
+      ready += res.filter(Boolean).length;
+    }
+    pool = pool.filter(t => !NOPREV.has(t.k));
+    queue = queue.filter(t => !NOPREV.has(t.k));
+    if (pool.length < 4 || !ready) throw new Error("No encuentro fragmentos de suficientes canciones de ese periodo.");
+    updateLabel();
+    store.set("dqms_lfuser", user);
+    store.set("dqms_seen", "1");
+    const q = new URLSearchParams({ user, period: $("lfPeriod").value });
+    if ($("lfPeriod").value === "rango") { q.set("from", $("lfFrom").value); q.set("to", $("lfTo").value); }
+    history.replaceState(null, "", "?" + q);
+    $("aviso").classList.add("hidden");
+    startGame(true);
+  } catch (e) {
+    $("aviso").classList.add("hidden");
+    $("err").textContent = e.message || "No se pudo conectar con Last.fm";
+  } finally { btn.disabled = false; btn.textContent = "Jugar"; }
+}
+
+function nextTrack(){
+  if (!queue.length) {
+    queue = shuffle([...pool]);
+    if (current && queue.length > 1 && queue[0] === current) queue.push(queue.shift());
+  }
+  return queue.shift();
+}
+function prefetchAhead(n = 3){
+  if (queue.length < n) queue.push(...shuffle(pool.filter(t => t !== current && !queue.includes(t))));
+  queue.slice(0, n).forEach(t => resolve(t).then(ok => ok && buffer(t)));
+}
+
+function startGame(keepQueue = false){
+  bestKey = recordKey();
+  if (!keepQueue) queue = [];
+  current = null; round = 0; score = 0; played = [];
+  clockLeft = S.total * 1000;
+  $("score").textContent = 0;
+  $("ofTotal").classList.toggle("hidden", S.game !== "rounds");
+  $("total").textContent = S.rounds;
+  $("clockStat").classList.toggle("hidden", S.game !== "clock");
+  $("clock").textContent = fmtClock(clockLeft);
+  $("clockStat").classList.remove("low");
+  show("game");
+  document.activeElement?.blur();
+  nextRound();
+}
+
+const pointsAt = t => Math.round((MAX_POINTS - (MAX_POINTS - MIN_POINTS) * Math.min(1, t)) * multiplier);
+
+function distractors(t){
+  const others = pool.filter(x => x !== t && nk(clean(x.title)) !== nk(clean(t.title)));
+  let three = [];
+  if (S.diff === "hard") three = shuffle(others.filter(x => nk(x.artist) === nk(t.artist))).slice(0, 3);
+  const rest = shuffle(others.filter(x => !three.includes(x)));
+  while (three.length < 3 && rest.length) three.push(rest.shift());
+  return three;
+}
+
+async function nextRound(){
+  if (S.game === "rounds" && round >= S.rounds) return endGame();
+  if (S.game === "clock" && clockLeft <= 0) return endGame();
+  const me = ++roundId;
+  audio.pause();
+  audio.onended = audio.onerror = audio.onloadedmetadata = null;
+  $("stage").classList.remove("playing", "revealed");
+  $("stage").onclick = null;
+  $("cover").classList.remove("ok"); $("cover").removeAttribute("src");
+  $("result").textContent = ""; $("result").className = "result";
+  $("nextBtn").classList.add("hidden");
+  $("bar").style.transform = "scaleX(1)";
+  $("loading").textContent = "Cargando…"; $("loading").classList.remove("hidden");
+  $("options").innerHTML = "";
+
+  // busca una canción con fragmento; las que no tienen salen de la partida
+  let t;
+  for (;;) {
+    t = nextTrack();
+    if (await resolve(t)) break;
+    pool = pool.filter(x => x !== t);
+    if (pool.length < 4) { $("loading").textContent = "Me quedé sin canciones con fragmento."; return endGame(); }
+  }
+  if (me !== roundId) return;
+  current = t;
+  round++;
+  $("round").textContent = round;
+  multiplier = S.weight ? 2 ** ((S.weight / 100) * (1 - 2 * t.rank)) : 1;
+  $("mult").classList.toggle("hidden", multiplier === 1);
+  $("mult").textContent = `×${multiplier.toFixed(2)}`;
+  $("potential").textContent = pointsAt(0);
+
+  const opts = shuffle([t, ...distractors(t)]);
+  const box = $("options");
+  opts.forEach((o, i) => {
+    const b = document.createElement("button");
+    b.className = "opt" + (S.covers === "yes" ? " wc" : ""); b.disabled = true;
+    b.innerHTML = (S.covers === "yes" ? `<span class="th"><img alt=""></span>` : "") + `<span class="tx"><span class="k">${i + 1}</span><small></small><strong></strong></span>`;
+    b.querySelector("small").textContent = o.artist;
+    b.querySelector("strong").textContent = o.title;
+    b.onclick = () => answer(b, o);
+    b._track = o;
+    box.appendChild(b);
+  });
+  if (t.cover) $("cover").src = t.cover;
+  prefetchAhead(3);
+  if (S.covers === "yes") {
+    // carátulas de las opciones: se espera un poco a que lleguen antes de que suene
+    const thumbs = [...box.children].map(b => resolve(b._track).then(() => new Promise(res => {
+      const o = b._track, img = b.querySelector(".th img");
+      if (!o.thumb) return res();
+      img.onload = () => { img.classList.add("ok"); res(); };
+      img.onerror = () => res();
+      img.src = o.thumb;
+    })));
+    await Promise.race([Promise.all(thumbs), new Promise(r => setTimeout(r, 1500))]);
+    if (me !== roundId) return;
+  }
+
+  const skip = () => {
+    if (me !== roundId) return;
+    round--;
+    pool = pool.filter(x => x !== t);
+    if (pool.length < 4) return endGame();
+    nextRound();
+  };
+  // el tiempo empieza a contar cuando de verdad suena
+  const go = () => {
+    if (me !== roundId) return;
+    const dur = isFinite(audio.duration) ? audio.duration : 30;
+    if (S.start === "random" && dur > S.roundTime + 1) audio.currentTime = Math.random() * (dur - S.roundTime);
+    audio.play().then(() => {
+      if (me !== roundId) return;
+      $("loading").classList.add("hidden");
+      $("stage").classList.add("playing");
+      box.querySelectorAll(".opt").forEach(b => b.disabled = false);
+      answered = false;
+      startTime = performance.now();
+      raf = requestAnimationFrame(tick);
+    }).catch(e => {
+      if (e.name === "NotAllowedError") {
+        $("loading").textContent = "Toca el disco para escuchar";
+        $("stage").onclick = () => { $("stage").onclick = null; go(); };
+      } else skip();
+    });
+  };
+  audio.onerror = skip;
+  audio.onloadedmetadata = () => { audio.onloadedmetadata = null; go(); };
+  audio.src = t.preview;
+}
+
+function tick(now){
+  if (answered) return;
+  const elapsed = now - startTime;
+  const t = Math.min(1, elapsed / (S.roundTime * 1000));
+  $("bar").style.transform = `scaleX(${1 - t})`;
+  $("potential").textContent = pointsAt(t);
+  if (S.game === "clock") {
+    const left = clockLeft - elapsed;
+    $("clock").textContent = fmtClock(left);
+    $("clockStat").classList.toggle("low", left < 10000);
+    if (left <= 0) { clockLeft = 0; answered = true; round--; return endGame(); }
+  }
+  if (t >= 1) return answer(null, null);
+  raf = requestAnimationFrame(tick);
+}
+
+function answer(btn, track){
+  if (answered) return;
+  answered = true;
+  cancelAnimationFrame(raf);
+  const elapsed = Math.min(performance.now() - startTime, S.roundTime * 1000);
+  if (S.game === "clock") { clockLeft -= elapsed; $("clock").textContent = fmtClock(clockLeft); }
+  const t = elapsed / (S.roundTime * 1000);
+  const ok = track === current;
+  const pts = ok ? pointsAt(t) : -S.penalty;
+  score += pts;
+  $("score").textContent = fmtNum(score);
+  played.push({ track: current, ok, pts, time: elapsed, timeout: !track, mult: multiplier });
+  // la canción sigue sonando al revelarla
+  $("stage").classList.add("revealed");
+  if ($("cover").getAttribute("src")) $("cover").classList.add("ok");
+  audio.onended = () => $("stage").classList.remove("playing");
+  $("options").querySelectorAll(".opt").forEach(b => {
+    b.disabled = true;
+    if (b._track === current) b.classList.add("ok");
+    else if (b === btn) b.classList.add("bad");
+    else b.classList.add("dim");
+  });
+  const r = $("result");
+  r.className = "result " + (ok ? "ok" : "bad");
+  const pen = S.penalty ? ` (−${S.penalty})` : "";
+  r.textContent = ok ? `¡Correcto! +${fmtNum(pts)}` : `${track ? "No." : "¡Se acabó el tiempo!"} Era «${current.title}» de ${current.artist}${pen}`;
+  const last = (S.game === "rounds" && round >= S.rounds) || (S.game === "clock" && clockLeft <= 0);
+  const nb = $("nextBtn");
+  nb.textContent = last ? "Ver resultado" : "Siguiente";
+  nb.classList.remove("hidden");
+  nb.focus();
+}
+
+let endAudio = null;
+function endGame(){
+  cancelAnimationFrame(raf); answered = true; roundId++;
+  audio.pause(); audio.onended = audio.onerror = audio.onloadedmetadata = null;
+  $("stage").classList.remove("playing");
+  show("end");
+  $("final").textContent = fmtNum(score);
+  const hits = played.filter(h => h.ok).length;
+  const best = store.get(bestKey);
+  let msg = `${hits} de ${played.length} aciertos · ${S.roundTime} s por canción`;
+  if (played.length && (best === null || score > +best)) { store.set(bestKey, score); msg += " · ¡Nuevo récord!"; }
+  $("endMsg").textContent = msg;
+  const s = $("summary"); s.innerHTML = "";
+  played.forEach(h => {
+    const row = document.createElement("div");
+    row.className = "srow" + (h.ok ? " ok" : "");
+    row.innerHTML = `${h.track.cover ? "<img alt=\"\">" : "<div class=\"noimg\"></div>"}<div class="t"><strong></strong><small></small><small class="meta"><span class="time"></span><span class="plays"></span></small></div><div class="m"><b></b><button title="Volver a escuchar">▶</button></div>`;
+    if (h.track.cover) row.querySelector("img").src = h.track.cover;
+    row.querySelector("strong").textContent = h.track.title;
+    row.querySelector("small:not(.meta)").textContent = h.track.artist + (h.track.album ? ` · ${h.track.album}` : "");
+    row.querySelector("b").textContent = h.pts > 0 ? `+${fmtNum(h.pts)}` : (h.pts < 0 ? `−${fmtNum(-h.pts)}` : "0");
+    row.querySelector(".time").textContent = h.timeout ? "⏱ agotado" : `⏱ ${(h.time / 1000).toFixed(1)} s`;
+    row.querySelector(".plays").textContent = ` · ${fmtNum(h.track.plays)} escuchas${h.mult !== 1 ? ` ×${h.mult.toFixed(2)}` : ""}`;
+    const pb = row.querySelector("button");
+    pb.onclick = () => {
+      const wasMe = endAudio === h && !audio.paused;
+      s.querySelectorAll(".srow button").forEach(b => b.textContent = "▶");
+      if (wasMe) { audio.pause(); endAudio = null; return; }
+      audio.src = h.track.preview; audio.play().catch(() => {});
+      endAudio = h; pb.textContent = "■";
+      audio.onended = () => { pb.textContent = "▶"; endAudio = null; };
+    };
+    s.appendChild(row);
+  });
+}
+
+function leaveEnd(){ audio.pause(); audio.onended = null; endAudio = null; }
+$("startBtn").onclick = startClicked;
+$("againBtn").onclick = () => { leaveEnd(); startGame(); };
+$("menuBtn").onclick = () => { leaveEnd(); show("start"); syncSettings(); $("settings").open = true; };
+$("nextBtn").onclick = nextRound;
+$("lfForm").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); startClicked(); } });
+document.addEventListener("keydown", e => {
+  if (!$("game").classList.contains("hidden")) {
+    const n = /^Digit([1-4])$|^Numpad([1-4])$/.exec(e.code), key = e.key >= "1" && e.key <= "4" ? +e.key : (n ? +(n[1] || n[2]) : 0);
+    if (key) e.preventDefault();
+    if (!answered && key) {
+      const b = $("options").children[key - 1]; if (b && !b.disabled) b.click();
+    } else if (answered && e.key === "Enter" && !$("nextBtn").classList.contains("hidden")) {
+      e.preventDefault(); nextRound();
+    }
+  } else if (e.key === "Enter" && !$("end").classList.contains("hidden") && !e.target.matches("button")) {
+    e.preventDefault(); $("againBtn").click();
+  }
+});
+
+(function init(){
+  const q = new URLSearchParams(location.search);
+  $("lfUser").value = q.get("user") || store.get("dqms_lfuser") || "";
+  if (q.get("period") && [...$("lfPeriod").options].some(o => o.value === q.get("period"))) $("lfPeriod").value = q.get("period");
+  $("lfFrom").value = q.get("from") || "";
+  $("lfTo").value = q.get("to") || fechaLocal(new Date());
+  $("fechas").classList.toggle("hidden", $("lfPeriod").value !== "rango");
+  updateLabel();
+  syncSettings();
+  show("start");
+})();
+</script>
+</body>
+</html>
