@@ -111,6 +111,62 @@ details.settings{margin:16px auto 0;max-width:420px;text-align:left;background:v
 details.settings summary{cursor:pointer;padding:10px 0;color:var(--text);font-weight:600;list-style:none}
 details.settings summary::-webkit-details-marker{display:none}
 details.settings summary::before{content:"⚙️ "}
+#rankBox summary::before{content:"🏆 "}
+.topbtns,.drawer{display:none}
+.gmain,.gside{min-width:0}
+/* ordenador: ajustes y ranking en un panel lateral; la partida en dos columnas */
+@media (min-width:900px){
+  .topbtns{display:flex;gap:8px;position:fixed;top:16px;right:16px;z-index:5}
+  .topbtns button{background:rgba(10,42,107,.86);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--text);border:1px solid #ffffff22;border-radius:999px;padding:9px 16px;font:inherit;font-size:.9rem;font-weight:600;cursor:pointer}
+  .topbtns button:hover,.topbtns button.on{border-color:var(--accent)}
+  body.on-game .topbtns,body:not(.has-rank) [data-tab=rankBox],body.in-reto [data-tab=settings]{display:none}
+  .drawer{display:flex;flex-direction:column;position:fixed;top:0;right:0;bottom:0;width:min(440px,92vw);z-index:6;background:rgba(10,42,107,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-left:1px solid #ffffff22;box-shadow:-20px 0 60px #0008;transform:translateX(105%);transition:transform .25s ease;visibility:hidden}
+  .drawer.open{transform:none;visibility:visible}
+  .dtabs{display:flex;gap:4px;padding:14px 14px 0;border-bottom:1px solid #ffffff1a}
+  .dtabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);font:inherit;font-weight:600;padding:8px 12px 10px;cursor:pointer}
+  .dtabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+  .dtabs .x{margin-left:auto;font-size:1.1rem}
+  .dbody{overflow:auto;padding:14px}
+  .dbody details.settings{margin:0;max-width:none;background:none;padding:0}
+  .dbody details>summary{display:none}
+  .dbody details:not(.on){display:none!important}
+  .dbody .grp{background:#001c59b3}
+  body.on-game main{max-width:1240px}
+  #game:not(.hidden){display:flex;gap:40px;align-items:center;min-height:calc(100vh - 220px)}
+  .gmain{flex:0 0 clamp(280px,32vw,400px)}
+  .gmain .stage{width:min(100%,58vh)}
+  .gside{flex:1}
+  .gside .bar{margin-top:0}
+  .gside .options{gap:14px}
+  .gside .opt{min-height:96px;padding:16px 18px;font-size:1.1rem;border-radius:14px}
+  .gside .opt small{font-size:.9rem;margin-bottom:4px}
+  .gside .opt.wc{grid-template-columns:96px 1fr;gap:16px;padding:10px 16px 10px 10px}
+  .gside .opt .th{width:96px;height:96px;border-radius:10px}
+  .gside .result{font-size:1.15rem;margin-top:18px}
+}
+@media (min-width:900px) and (prefers-reduced-motion:reduce){.drawer{transition:none}}
+.inp{background:var(--bg);color:var(--text);border:2px solid var(--panel2);border-radius:10px;padding:9px 12px;font:inherit;width:100%}
+.inp:focus{outline:none;border-color:var(--accent)}
+.grp .hint{margin:0;font-size:.8rem;color:var(--muted);text-wrap:pretty}
+.grp .btn{margin:0;justify-self:start;padding:8px 18px}
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:4px;counter-reset:rk;text-align:left}
+.rank li{counter-increment:rk;display:grid;grid-template-columns:2em 1fr auto;gap:8px;align-items:baseline;background:var(--bg);border-radius:8px;padding:6px 10px;font-size:.9rem}
+.rank li::before{content:counter(rk);color:var(--muted);font-variant-numeric:tabular-nums}
+.rank li.me{outline:2px solid var(--accent)}
+.rank li.empty{grid-template-columns:1fr;color:var(--muted)}
+.rank li.empty::before{content:none}
+.rank span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank b{font-variant-numeric:tabular-nums}
+.rank small{grid-column:2/4;color:var(--muted);font-size:.75rem;margin-top:-2px}
+.reto{background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:12px 14px;margin:16px auto 0;max-width:400px}
+.reto p{margin:4px 0!important;font-size:.95rem!important}
+.lnk{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:.85rem;cursor:pointer;padding:4px}
+body.in-reto #lfForm,body.in-reto #settings{display:none}
+.share{display:flex;gap:8px;max-width:400px;margin:18px auto 0}
+.share .btn{margin:0;white-space:nowrap;padding:10px 16px}
+.endbox{margin:18px auto 0;max-width:400px;text-align:left;display:grid;gap:8px}
+.endbox h3{margin:0;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.endbox .hint{margin:0!important;font-size:.85rem!important;color:var(--muted)!important}
 details.settings summary span{float:right;color:var(--muted);font-weight:400;font-size:.8rem;margin-top:2px}
 .set{display:grid;gap:10px;padding:2px 0 14px}
 .grp{background:var(--panel);border-radius:10px;padding:12px 12px 14px;display:grid;gap:14px}
@@ -140,6 +196,18 @@ footer a{color:var(--muted)}
 </head>
 <body class="on-start">
 <canvas id="scope" aria-hidden="true"></canvas>
+<nav class="topbtns" id="topBtns">
+  <button data-tab="settings">⚙️ Ajustes</button>
+  <button data-tab="rankBox">🏆 Ranking</button>
+</nav>
+<aside class="drawer" id="drawer" aria-label="Ajustes y ranking">
+  <div class="dtabs">
+    <button data-tab="settings">⚙️ Ajustes</button>
+    <button data-tab="rankBox">🏆 Ranking</button>
+    <button class="x" id="drawerX" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="dbody" id="drawerBody"></div>
+</aside>
 
 <header>
   <h1>¿De qué me suena?</h1>
@@ -155,6 +223,11 @@ footer a{color:var(--muted)}
     <h2 class="brand">¿De qué me suena?</h2>
     <p>Suena un trozo de una canción. Adivina cuál es entre 4 opciones.</p>
     <p>Cuanto antes aciertes, más puntos. Teclas <b>1–4</b> para responder, <b>Enter</b> para seguir.</p>
+    <div id="retoInfo" class="reto hidden">
+      <p>🥊 <b id="retoWho"></b> te reta</p>
+      <p id="retoTxt"></p>
+      <button class="lnk" id="retoExit">No, jugar normal</button>
+    </div>
     <form id="lfForm" class="lf" onsubmit="return false">
       <div class="ask">¿Con qué canciones?</div>
       <div class="src" id="srcSeg">
@@ -249,8 +322,8 @@ footer a{color:var(--muted)}
           </div>
           <div class="it">Carátulas en las opciones
             <div class="seg" id="coverSeg">
-              <button data-v="no">No</button>
               <button data-v="yes">Sí</button>
+              <button data-v="no">No</button>
             </div>
           </div>
           <div class="it">El trozo empieza
@@ -284,6 +357,33 @@ footer a{color:var(--muted)}
       </div>
     </details>
 
+    <details class="settings hidden" id="rankBox">
+      <summary>Ranking <span id="rankSum"></span></summary>
+      <div class="set">
+        <section class="grp" id="rkOut">
+          <p class="hint">Entra con Google para salir en el ranking. No se publica nada hasta que tú lo actives.</p>
+          <button class="btn" id="rkIn">Entrar con Google</button>
+        </section>
+        <section class="grp hidden" id="rkMe">
+          <h3>Tu cuenta</h3>
+          <label class="it">Nombre en el ranking<input class="inp" id="rkName" maxlength="24" spellcheck="false"></label>
+          <div class="it">Mis partidas
+            <div class="seg" id="rkPub">
+              <button data-v="0">Privadas</button>
+              <button data-v="1">Públicas</button>
+            </div>
+            <span class="hint" id="rkPubHint"></span>
+          </div>
+          <button class="lnk" id="rkOutBtn" style="justify-self:start">Salir de la cuenta</button>
+        </section>
+        <section class="grp">
+          <h3>Los 10 mejores de este modo</h3>
+          <p class="hint" id="rkDesc"></p>
+          <ol class="rank" id="rkList"></ol>
+        </section>
+      </div>
+    </details>
+
     <p id="best"></p>
     <p id="aviso" class="aviso hidden"></p>
     <p id="err" class="err"></p>
@@ -291,17 +391,21 @@ footer a{color:var(--muted)}
   </section>
 
   <section id="game" class="hidden">
+    <div class="gmain">
     <div class="stage" id="stage">
       <div class="vinyl"></div>
       <div class="label"><span>?</span><img id="cover" alt=""></div>
       <div class="loading" id="loading">Cargando…</div>
     </div>
     <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="gside">
     <div class="bar"><div id="bar"></div></div>
     <div class="potential">Puntos en juego: <b id="potential">1000</b><i id="mult" class="hidden"></i></div>
     <div class="options" id="options"></div>
     <div class="result" id="result"></div>
     <button class="btn hidden" id="nextBtn">Siguiente</button>
+    </div>
   </section>
 
   <section id="end" class="screen hidden">
@@ -309,6 +413,16 @@ footer a{color:var(--muted)}
     <div class="big" id="final">0</div>
     <p id="endMsg"></p>
     <div class="summary" id="summary"></div>
+    <div class="share">
+      <input class="inp" id="retoName" maxlength="24" placeholder="Tu nombre" spellcheck="false">
+      <button class="btn" id="retoBtn">🔗 Retar a alguien</button>
+    </div>
+    <p class="hint" id="retoMsg" style="font-size:.85rem;color:var(--muted)"></p>
+    <div class="endbox hidden" id="endRank">
+      <h3>Ranking de este modo</h3>
+      <p class="hint" id="endRankMsg"></p>
+      <ol class="rank" id="endRankList"></ol>
+    </div>
     <button class="btn prim" id="againBtn">Otra partida</button>
     <button class="btn" id="menuBtn">Cambiar ajustes</button>
   </section>
@@ -320,7 +434,7 @@ footer a{color:var(--muted)}
 <script>
 const MAX_POINTS = 1000, MIN_POINTS = 100;
 const LASTFM_API_KEY = "de2f8bfff3ddd42fb7fc1c47ccfa945a";
-const DEFAULTS = { pool: 150, diff: "easy", covers: "no", bg: "bars", start: "random", roundTime: 15, game: "rounds", rounds: 10, total: 120, penalty: 0, weight: 0 };
+const DEFAULTS = { pool: 150, diff: "easy", covers: "yes", bg: "bars", start: "random", roundTime: 15, game: "rounds", rounds: 10, total: 120, penalty: 0, weight: 0 };
 const SILENCIO = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
 const $ = id => document.getElementById(id);
@@ -335,9 +449,11 @@ const fechaLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
 
 let S = { ...DEFAULTS };
 try { Object.assign(S, JSON.parse(store.get("dqms_settings") || "{}")); } catch {}
+if (!store.get("dqms_v2")) { S.covers = "yes"; store.set("dqms_v2", "1"); }   // antes venían sin carátulas por defecto
 
 let pool = [], queue = [], round = 0, score = 0, played = [];
 let lfLabel = "", bestKey = "", playsUnit = "escuchas";
+let roundInfo = {};
 let current = null, startTime = 0, raf = 0, answered = true, clockLeft = 0, multiplier = 1, roundId = 0;
 const audio = $("audio");
 
@@ -455,7 +571,7 @@ function syncSettings(){
   $("rowRounds").classList.toggle("hidden", S.game !== "rounds");
   $("rowTotal").classList.toggle("hidden", S.game !== "clock");
   $("setSummary").textContent = `${S.roundTime} s · ${S.diff === "hard" ? "difícil" : "fácil"}${S.covers === "yes" ? " · carátulas" : ""} · ${S.game === "rounds" ? S.rounds + " rondas" : fmtClock(S.total * 1000)}`;
-  store.set("dqms_settings", JSON.stringify(S));
+  if (!reto) store.set("dqms_settings", JSON.stringify(S));   // los ajustes de un reto son prestados
   if (scope.bg !== S.bg) { scope.bg = S.bg; scope.peaks = null; scopeResize(); }
   showBest();
 }
@@ -502,6 +618,7 @@ function periodLabel(){
 }
 // cada fuente tiene su récord; la de usuario conserva el formato de antes
 function updateLabel(){
+  if (reto) { lfLabel = "reto:" + reto.id; showBest(); return; }
   const tags = tagList();
   document.querySelectorAll("#tagChips button").forEach(b => b.classList.toggle("active", tags.includes(b.dataset.tag)));
   const u = $("lfUser").value.trim().toLowerCase();
@@ -517,6 +634,7 @@ function updateLabel(){
 }
 function recordKey(){ return `dqms_best_${lfLabel}_${S.game}_${S.diff}${S.covers === "yes" ? "_covers" : ""}`; }
 function showBest(){
+  rankSoon();
   if (!lfLabel) { $("best").textContent = ""; return; }
   const b = store.get(recordKey()); $("best").textContent = b !== null ? `Tu récord en este modo: ${fmtNum(+b)} puntos` : "";
 }
@@ -670,10 +788,44 @@ function buffer(t){
 function show(id){
   for (const s of ["start", "game", "end"]) $(s).classList.toggle("hidden", s !== id);
   document.body.classList.toggle("on-start", id === "start");
+  document.body.classList.toggle("on-game", id === "game");
+  if (id === "game") closePanel();
 }
+
+/* ---------- Ajustes y ranking: dentro de la tarjeta en el móvil, en un panel lateral en el ordenador ---------- */
+const wide = matchMedia("(min-width: 900px)");
+const homes = ["settings", "rankBox"].map(id => [$(id), $(id).parentNode, $(id).nextSibling]);
+let panelTab = "settings";
+function placePanels(){
+  for (const [el, parent, next] of homes) {
+    if (wide.matches) { $("drawerBody").append(el); el.open = true; }
+    else if (el.parentNode !== parent) { parent.insertBefore(el, next); el.open = false; }
+  }
+  if (!wide.matches) closePanel();
+  setTab(panelTab);
+}
+function setTab(tab){
+  panelTab = tab;
+  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === tab && $("drawer").classList.contains("open")));
+  for (const [el] of homes) el.classList.toggle("on", el.id === tab);
+  rankSoon();
+}
+function openPanel(tab){
+  if (!wide.matches) { $(tab).open = true; $(tab).scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  $("drawer").classList.add("open");
+  setTab(tab);
+}
+function closePanel(){ $("drawer").classList.remove("open"); setTab(panelTab); }
+document.querySelectorAll("#topBtns [data-tab]").forEach(b => b.onclick = () =>
+  $("drawer").classList.contains("open") && panelTab === b.dataset.tab ? closePanel() : openPanel(b.dataset.tab));
+document.querySelectorAll(".dtabs [data-tab]").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+$("drawerX").onclick = closePanel;
+addEventListener("keydown", e => { if (e.key === "Escape" && $("drawer").classList.contains("open")) closePanel(); });
+wide.addEventListener?.("change", placePanels);
 
 async function startClicked(){
   $("err").textContent = "";
+  if (reto) return startReto();
   const need = (cond, msg, el) => { if (cond) return false; $("err").textContent = msg; el?.focus(); return true; };
   const user = $("lfUser").value.trim();
   if (src === "user" && (need(user, "Escribe un usuario de Last.fm", $("lfUser")) ||
@@ -738,13 +890,15 @@ function nextTrack(){
   return queue.shift();
 }
 function prefetchAhead(n = 3){
+  if (reto) return queue.slice(0, n).forEach(r => resolve(r.t).then(ok => ok && buffer(r.t)));
   if (queue.length < n) queue.push(...shuffle(pool.filter(t => t !== current && !queue.includes(t))));
   queue.slice(0, n).forEach(t => resolve(t).then(ok => ok && buffer(t)));
 }
 
 function startGame(keepQueue = false){
   bestKey = recordKey();
-  if (!keepQueue) queue = [];
+  if (reto) queue = [...reto.rounds];
+  else if (!keepQueue) queue = [];
   current = null; round = 0; score = 0; played = [];
   clockLeft = S.total * 1000;
   $("score").textContent = 0;
@@ -785,8 +939,15 @@ async function nextRound(){
   $("options").innerHTML = "";
 
   // busca una canción con fragmento; las que no tienen salen de la partida
-  let t;
+  let t, rr = null;
   for (;;) {
+    if (reto) {   // en un reto las rondas van en orden y con sus opciones fijas
+      rr = queue.shift();
+      if (!rr) return endGame();
+      t = rr.t;
+      if (await resolve(t)) break;
+      continue;
+    }
     t = nextTrack();
     if (await resolve(t)) break;
     pool = pool.filter(x => x !== t);
@@ -801,7 +962,9 @@ async function nextRound(){
   $("mult").textContent = `×${multiplier.toFixed(2)}`;
   $("potential").textContent = pointsAt(0);
 
-  const opts = shuffle([t, ...distractors(t)]);
+  const ds = rr ? rr.d : distractors(t);
+  roundInfo = { d: ds, o: null, ri: rr ? rr.i : null };
+  const opts = shuffle([t, ...ds]);
   const box = $("options");
   opts.forEach((o, i) => {
     const b = document.createElement("button");
@@ -831,15 +994,21 @@ async function nextRound(){
   const skip = () => {
     if (me !== roundId) return;
     round--;
-    pool = pool.filter(x => x !== t);
-    if (pool.length < 4) return endGame();
+    if (!reto) {
+      pool = pool.filter(x => x !== t);
+      if (pool.length < 4) return endGame();
+    }
     nextRound();
   };
   // el tiempo empieza a contar cuando de verdad suena
   const go = () => {
     if (me !== roundId) return;
     const dur = isFinite(audio.duration) ? audio.duration : 30;
-    if (S.start === "random" && dur > S.roundTime + 1) audio.currentTime = Math.random() * (dur - S.roundTime);
+    if (S.start === "random" && dur > S.roundTime + 1) {
+      const o = rr && rr.o != null ? Math.min(rr.o, dur - S.roundTime) : Math.random() * (dur - S.roundTime);
+      audio.currentTime = o;
+      roundInfo.o = Math.round(o * 10) / 10;   // se guarda para que un reto suene igual
+    }
     audio.play().then(() => {
       if (me !== roundId) return;
       $("loading").classList.add("hidden");
@@ -889,7 +1058,7 @@ function answer(btn, track){
   const pts = ok ? pointsAt(t) : -S.penalty;
   score += pts;
   $("score").textContent = fmtNum(score);
-  played.push({ track: current, ok, pts, time: elapsed, timeout: !track, mult: multiplier });
+  played.push({ track: current, ok, pts, time: elapsed, timeout: !track, mult: multiplier, ...roundInfo });
   // la canción sigue sonando al revelarla
   $("stage").classList.add("revealed");
   if ($("cover").getAttribute("src")) $("cover").classList.add("ok");
@@ -922,7 +1091,11 @@ function endGame(){
   const best = store.get(bestKey);
   let msg = `${hits} de ${played.length} aciertos · ${S.roundTime} s por canción`;
   if (played.length && (best === null || score > +best)) { store.set(bestKey, score); msg += " · ¡Nuevo récord!"; }
+  if (reto) msg += ` · ${reto.n}: ${fmtNum(reto.s)} → ${score > reto.s ? "¡ganas tú!" : score < reto.s ? `gana ${reto.n}` : "empate"}`;
   $("endMsg").textContent = msg;
+  $("retoMsg").textContent = "";
+  $("retoName").value = fb.prof?.name || store.get("dqms_name") || "";
+  rankAfterGame({ score, hits, rounds: played.length });
   const s = $("summary"); s.innerHTML = "";
   played.forEach(h => {
     const row = document.createElement("div");
@@ -934,6 +1107,8 @@ function endGame(){
     row.querySelector("b").textContent = h.pts > 0 ? `+${fmtNum(h.pts)}` : (h.pts < 0 ? `−${fmtNum(-h.pts)}` : "0");
     row.querySelector(".time").textContent = h.timeout ? "⏱ agotado" : `⏱ ${(h.time / 1000).toFixed(1)} s`;
     row.querySelector(".plays").textContent = (h.track.plays ? ` · ${fmtNum(h.track.plays)} ${playsUnit}` : "") + (h.mult !== 1 ? ` · ×${h.mult.toFixed(2)}` : "");
+    const rx = reto && h.ri != null ? reto.r[h.ri].x : null;   // lo que hizo quien te retó en esta canción
+    if (rx) row.querySelector(".meta").append(` · ${reto.n}: ${rx[0] ? "+" + fmtNum(rx[1]) : rx[1] < 0 ? "−" + fmtNum(-rx[1]) : "✗"}`);
     const pb = row.querySelector("button");
     pb.onclick = () => {
       const wasMe = endAudio === h && !audio.paused;
@@ -950,7 +1125,9 @@ function endGame(){
 function leaveEnd(){ audio.pause(); audio.onended = null; endAudio = null; }
 $("startBtn").onclick = startClicked;
 $("againBtn").onclick = () => { leaveEnd(); startGame(); };
-$("menuBtn").onclick = () => { leaveEnd(); show("start"); syncSettings(); $("settings").open = true; };
+$("menuBtn").onclick = () => { leaveEnd(); if (reto) leaveReto(); show("start"); syncSettings(); openPanel("settings"); };
+$("retoExit").onclick = () => leaveReto();
+$("retoBtn").onclick = shareReto;
 $("nextBtn").onclick = nextRound;
 $("lfForm").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); startClicked(); } });
 document.addEventListener("keydown", e => {
@@ -966,6 +1143,252 @@ document.addEventListener("keydown", e => {
     e.preventDefault(); $("againBtn").click();
   }
 });
+
+/* ---------- Retos: la partida entera viaja en el enlace, sin base de datos ---------- */
+let reto = null, savedS = null;
+// ajustes que cambian la puntuación: un reto los fija y el ranking los separa
+const RULES = ["game", "rounds", "total", "roundTime", "diff", "covers", "start", "penalty", "weight"];
+const rulesOf = o => { const r = {}; for (const k of RULES) r[k] = o[k]; if (r.game === "rounds") delete r.total; else delete r.rounds; return r; };
+const rulesDesc = o => `${o.game === "rounds" ? o.rounds + " rondas" : "contrarreloj de " + fmtClock(o.total * 1000)} · ${o.roundTime} s · ${o.diff === "hard" ? "difícil" : "fácil"}${o.covers === "yes" ? " · carátulas" : ""}${o.penalty ? ` · −${o.penalty}` : ""}${o.weight ? " · premio " + weightLabel(o.weight) : ""}`;
+const b64u = {
+  enc: b => { let s = ""; for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode(...b.subarray(i, i + 8192)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+  dec: s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0)),
+};
+const pipe = async (bytes, stream) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+async function pack(obj){
+  const raw = new TextEncoder().encode(JSON.stringify(obj));
+  return window.CompressionStream ? "z" + b64u.enc(await pipe(raw, new CompressionStream("deflate-raw"))) : "j" + b64u.enc(raw);
+}
+async function unpack(str){
+  let b = b64u.dec(str.slice(1));
+  if (str[0] === "z") b = await pipe(b, new DecompressionStream("deflate-raw"));
+  return JSON.parse(new TextDecoder().decode(b));
+}
+async function sha(obj){
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(obj))));
+  return [...h.slice(0, 10)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+function srcDesc(){
+  if (reto) return reto.l;
+  return {
+    user: `las escuchas de ${$("lfUser").value.trim()}`, tag: tagList().join(", "), geo: `lo más escuchado en ${$("geoIn").selectedOptions[0]?.text}`,
+    artist: artistList().join(", "), chart: "éxitos de Last.fm", deezer: "una lista de Deezer",
+  }[src];
+}
+
+async function enterReto(r){
+  if (!r || r.v !== 1 || !Array.isArray(r.r) || !r.r.length) throw new Error("reto");
+  savedS = savedS || { ...S };
+  S = { ...savedS, ...rulesOf({ ...DEFAULTS, ...r.S }) };
+  // las mismas canciones como objetos únicos, para que sus fragmentos se busquen una sola vez
+  const byK = new Map();
+  const mk = (artist, title) => {
+    const k = nk(artist) + "|" + nk(clean(title));
+    if (!byK.has(k)) byK.set(k, { artist, title, k, plays: 0, rank: 0 });
+    return byK.get(k);
+  };
+  r.rounds = r.r.map((x, i) => {
+    const t = mk(x.a, x.t); t.plays = x.p || 0; t.rank = x.k || 0;
+    return { t, d: x.d.map(([a, b]) => mk(a, b)), o: x.o ?? null, i };
+  });
+  r.pool = [...byK.values()];
+  r.id = await sha({ S: r.S, r: r.r.map(x => [x.a, x.t, x.o, x.d]) });   // igual para todos los que juegan este reto
+  reto = r;
+  playsUnit = r.u || "escuchas";
+  document.body.classList.add("in-reto");
+  $("retoWho").textContent = r.n || "Alguien";
+  const jugadas = r.r.filter(x => x.x).length;
+  $("retoTxt").textContent = `Hizo ${fmtNum(r.s)} puntos (${r.r.filter(x => x.x?.[0]).length} de ${jugadas} aciertos) con ${r.l}. Te tocan las mismas canciones: ${rulesDesc(S)}.`;
+  $("retoInfo").classList.remove("hidden");
+  $("startBtn").textContent = "Aceptar reto";
+  syncSettings(); updateLabel();
+}
+function leaveReto(){
+  reto = null;
+  if (savedS) S = savedS;
+  savedS = null;
+  document.body.classList.remove("in-reto");
+  $("retoInfo").classList.add("hidden");
+  $("startBtn").textContent = "Jugar";
+  history.replaceState(null, "", location.pathname);
+  syncSettings(); updateLabel();
+}
+async function startReto(){
+  scopeInit();
+  audio.src = SILENCIO; audio.play().catch(() => {});
+  const btn = $("startBtn"); btn.disabled = true; btn.textContent = "Buscando fragmentos…";
+  try {
+    pool = reto.pool;
+    await Promise.all(reto.rounds.slice(0, 2).map(r => resolve(r.t)));
+    startGame();
+  } finally { btn.disabled = false; btn.textContent = "Aceptar reto"; }
+}
+async function retoLink(){
+  const T = t => [t.artist, t.title];
+  const rounds = played.map(h => ({ a: h.track.artist, t: h.track.title, k: +(h.track.rank || 0).toFixed(3), p: h.track.plays || 0, o: h.o, d: h.d.map(T), x: [h.ok ? 1 : 0, h.pts] }));
+  // en contrarreloj quien acepte puede llegar más lejos: van rondas de sobra
+  if (S.game === "clock") {
+    const extra = reto ? queue.slice(0, 20).map(r => ({ t: r.t, d: r.d }))
+      : shuffle(pool.filter(t => !played.some(h => h.track === t))).slice(0, 20).map(t => ({ t, d: distractors(t) }));
+    rounds.push(...extra.map(({ t, d }) => ({ a: t.artist, t: t.title, k: +(t.rank || 0).toFixed(3), p: t.plays || 0, o: null, d: d.map(T) })));
+  }
+  const name = $("retoName").value.trim().slice(0, 24) || "Alguien";
+  store.set("dqms_name", name);
+  const code = await pack({ v: 1, n: name, s: score, l: srcDesc(), u: playsUnit, S: rulesOf(S), r: rounds });
+  return `${location.origin}${location.pathname}?reto=${code}`;
+}
+async function shareReto(){
+  if (!played.length) return;
+  const url = await retoLink(), msg = $("retoMsg");
+  const text = `He hecho ${fmtNum(score)} puntos en «¿De qué me suena?». ¿Me ganas con las mismas canciones?`;
+  if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+    try { await navigator.share({ title: "¿De qué me suena?", text, url }); msg.textContent = "Reto enviado."; return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  try { await navigator.clipboard.writeText(url); msg.textContent = "Enlace copiado: pégaselo a quien quieras retar."; }
+  catch {
+    msg.textContent = "Copia este enlace: ";
+    const i = document.createElement("input"); i.className = "inp"; i.readOnly = true; i.value = url; msg.append(i); i.select();
+  }
+}
+
+/* ---------- Ranking (Firebase): solo si está configurado y solo si cada cual lo activa ---------- */
+// Configuración web del proyecto de Firebase (es pública por diseño; lo que protege los datos son las reglas de firestore.rules).
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCdGSwlzNnQOS54x-Wt1PKP5HxE9uCGNFc",   // gitleaks:allow (clave web pública de Firebase)
+  authDomain: "dequemesuena-bb2e6.firebaseapp.com",
+  projectId: "dequemesuena-bb2e6",
+  appId: "1:828806378846:web:ba8a13a715fd4fb065cbcf",
+};
+const fb = { on: !!FIREBASE_CONFIG, A: null, F: null, auth: null, db: null, user: null, prof: null, loading: null };
+function fbLoad(){
+  if (!fb.on) return Promise.resolve(false);
+  return fb.loading ||= (async () => {
+    const V = "https://www.gstatic.com/firebasejs/10.12.2/";
+    const [app, A, F] = await Promise.all(["firebase-app.js", "firebase-auth.js", "firebase-firestore.js"].map(f => import(V + f)));
+    const a = app.initializeApp(FIREBASE_CONFIG);
+    Object.assign(fb, { A, F, auth: A.getAuth(a), db: F.getFirestore(a) });
+    await new Promise(res => A.onAuthStateChanged(fb.auth, async u => {
+      fb.user = u; fb.prof = null;
+      if (u) try { fb.prof = await loadProf(u); } catch {}
+      rankUI(); res();
+    }));
+    return true;
+  })();
+}
+async function loadProf(u){
+  const ref = fb.F.doc(fb.db, "users", u.uid), snap = await fb.F.getDoc(ref);
+  if (snap.exists()) return { boards: [], ...snap.data() };
+  const p = { name: (u.displayName || "Anónimo").split(" ")[0].slice(0, 24), pub: false, boards: [] };
+  await fb.F.setDoc(ref, p);
+  return p;
+}
+async function boardId(){
+  if (reto) return "r" + reto.id;
+  if (src === "user" || !lfLabel) return null;   // cada cual juega con sus escuchas: no se puede comparar
+  return "b" + await sha({ l: lfLabel, ...rulesOf(S) });
+}
+const boardDesc = () => `${srcDesc()} · ${rulesDesc(S)}`.slice(0, 120);
+function rankUI(){
+  const u = fb.user, p = fb.prof;
+  $("rkOut").classList.toggle("hidden", !!u);
+  $("rkMe").classList.toggle("hidden", !u);
+  $("rankSum").textContent = !u ? "entra para competir" : `${p?.name || ""} · ${p?.pub ? "públicas" : "privadas"}`;
+  if (u && p) {
+    if (document.activeElement !== $("rkName")) $("rkName").value = p.name;
+    document.querySelectorAll("#rkPub button").forEach(b => b.classList.toggle("active", b.dataset.v === (p.pub ? "1" : "0")));
+    $("rkPubHint").textContent = p.pub ? "Al acabar cada partida se publica tu nombre y tu mejor puntuación de ese modo." : "No se publica nada. Puedes seguir viendo el ranking.";
+  }
+  rankSoon();
+}
+let rankT = 0;
+function rankSoon(){
+  if (!fb.on || !$("rankBox").open || (wide.matches && !($("drawer").classList.contains("open") && panelTab === "rankBox"))) return;
+  clearTimeout(rankT);
+  rankT = setTimeout(async () => {
+    const b = await boardId();
+    $("rkDesc").textContent = b ? boardDesc() : "Con «Mis escuchas» no hay ranking: cada cual juega con sus canciones. Al acabar, crea un reto para competir con ellas.";
+    $("rkList").innerHTML = "";
+    if (b && await fbLoad()) showTop(b, $("rkList"));
+  }, 300);
+}
+async function showTop(b, ol){
+  const { F } = fb;
+  ol.innerHTML = '<li class="empty">Cargando…</li>';
+  try {
+    // Firestore reintenta sin fin si no hay conexión: mejor rendirse a los 10 s
+    const snap = await Promise.race([
+      F.getDocs(F.query(F.collection(fb.db, "boards", b, "scores"), F.orderBy("score", "desc"), F.limit(10))),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000)),
+    ]);
+    ol.innerHTML = "";
+    snap.forEach(d => {
+      const x = d.data(), li = document.createElement("li");
+      li.className = d.id === fb.user?.uid ? "me" : "";
+      li.innerHTML = "<span></span><b></b><small></small>";
+      li.querySelector("span").textContent = x.name;
+      li.querySelector("b").textContent = fmtNum(x.score);
+      li.querySelector("small").textContent = `${x.hits} de ${x.rounds} aciertos`;
+      ol.append(li);
+    });
+    if (snap.empty) ol.innerHTML = '<li class="empty">Nadie todavía. ¡La primera plaza está libre!</li>';
+  } catch (e) { ol.innerHTML = ""; const li = document.createElement("li"); li.className = "empty"; li.textContent = "No se pudo leer el ranking."; ol.append(li); }
+}
+// se publica solo la mejor puntuación de cada persona en cada modo
+async function publish(b, res){
+  const { F } = fb, ref = F.doc(fb.db, "boards", b, "scores", fb.user.uid);
+  const old = await F.getDoc(ref);
+  if (old.exists() && old.data().score >= res.score) return false;
+  await F.setDoc(ref, { name: fb.prof.name, score: res.score, hits: res.hits, rounds: res.rounds, desc: boardDesc(), at: F.serverTimestamp() });
+  if (!fb.prof.boards.includes(b)) {
+    fb.prof.boards.push(b);
+    await F.updateDoc(F.doc(fb.db, "users", fb.user.uid), { boards: F.arrayUnion(b) });
+  }
+  return true;
+}
+async function rankAfterGame(res){
+  const box = $("endRank");
+  box.classList.add("hidden");
+  if (!fb.on || !res.rounds) return;
+  const b = await boardId();
+  if (!b || !await fbLoad().catch(() => false)) return;
+  box.classList.remove("hidden");
+  let msg;
+  if (!fb.user) msg = "Entra con Google en «Ranking» para aparecer aquí.";
+  else if (!fb.prof?.pub) msg = "Tus partidas son privadas: no se ha publicado nada.";
+  else try { msg = await publish(b, res) ? "Publicada como tu mejor puntuación en este modo." : "Tu mejor puntuación en este modo sigue siendo la anterior."; }
+  catch (e) { msg = "No se pudo publicar: " + e.message; }
+  $("endRankMsg").textContent = msg;
+  showTop(b, $("endRankList"));
+}
+async function setPublic(on){
+  const { F } = fb, me = F.doc(fb.db, "users", fb.user.uid);
+  if (!on && fb.prof.boards.length) {
+    if (!confirm("Se borrarán del ranking todas tus puntuaciones publicadas. ¿Seguro?")) return;
+    await Promise.all(fb.prof.boards.map(b => F.deleteDoc(F.doc(fb.db, "boards", b, "scores", fb.user.uid)).catch(() => {})));
+    fb.prof.boards = [];
+  }
+  fb.prof.pub = on;
+  await F.updateDoc(me, { pub: on, boards: fb.prof.boards });
+  rankUI();
+}
+async function rename(){
+  const name = $("rkName").value.trim().slice(0, 24);
+  if (!name || name === fb.prof.name) { $("rkName").value = fb.prof.name; return; }
+  const { F } = fb;
+  fb.prof.name = name;
+  await F.updateDoc(F.doc(fb.db, "users", fb.user.uid), { name });
+  await Promise.all(fb.prof.boards.map(b => F.updateDoc(F.doc(fb.db, "boards", b, "scores", fb.user.uid), { name }).catch(() => {})));
+  rankUI();
+}
+$("rankBox").addEventListener("toggle", rankSoon);
+$("rkIn").onclick = async () => {
+  await fbLoad();
+  try { await fb.A.signInWithPopup(fb.auth, new fb.A.GoogleAuthProvider()); }
+  catch (e) { if (/popup-blocked|operation-not-supported/.test(e.code)) fb.A.signInWithRedirect(fb.auth, new fb.A.GoogleAuthProvider()); }
+};
+$("rkOutBtn").onclick = () => fb.A.signOut(fb.auth);
+$("rkName").onchange = () => rename().catch(e => alert("No se pudo cambiar el nombre: " + e.message));
+document.querySelectorAll("#rkPub button").forEach(b => b.onclick = e => { e.preventDefault(); setPublic(b.dataset.v === "1").catch(err => alert(err.message)); });
 
 (function init(){
   const q = new URLSearchParams(location.search);
@@ -984,6 +1407,9 @@ document.addEventListener("keydown", e => {
   setSrc(fromUrl || src);
   syncSettings();
   show("start");
+  if (q.get("reto")) unpack(q.get("reto")).then(enterReto).catch(() => { $("err").textContent = "Ese enlace de reto está roto o incompleto."; });
+  placePanels();
+  if (fb.on) { $("rankBox").classList.remove("hidden"); document.body.classList.add("has-rank"); fbLoad().catch(e => { $("rkDesc").textContent = "No se pudo cargar el ranking: " + e.message; }); }
 })();
 </script>
 </body>

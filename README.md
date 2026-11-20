@@ -16,6 +16,26 @@ Juego web: suena un trozo de una canción y hay que acertar cuál es entre 4 opc
 
 Es una página estática para GitHub Pages, sin servidor ni ficheros que subir.
 
+## Retos
+
+Al acabar, «Retar a alguien» copia un enlace `?reto=…` con la partida entera comprimida: canciones, opciones, punto de inicio de cada trozo, ajustes y tu resultado en cada ronda. Quien lo abre juega exactamente lo mismo y al final ve la comparación. No necesita base de datos.
+
+## Ranking (opcional, con Firebase)
+
+Si `FIREBASE_CONFIG` en `index.html` es `null`, el ranking no aparece y no se carga nada de Firebase. Para activarlo:
+
+1. Crea un proyecto en <https://console.firebase.google.com> (el plan gratuito Spark basta).
+2. *Authentication* → *Sign-in method*: activa **Google**. En *Settings → Authorized domains* añade `volteret4.github.io`.
+3. *Firestore Database*: créala en modo producción y pega en *Rules* el contenido de [`firestore.rules`](firestore.rules).
+4. *Configuración del proyecto* → *Tus apps* → añade una app web y copia el objeto `firebaseConfig` en `FIREBASE_CONFIG`.
+
+Funcionamiento:
+
+- Cada persona entra con Google y elige si sus partidas son **privadas** (por defecto: no se publica nada) o **públicas**. Al pasar a privadas se borran sus puntuaciones publicadas.
+- Se guarda solo la mejor puntuación de cada persona en cada tabla. Una tabla es una fuente más los ajustes que cambian la puntuación; cada reto tiene su propia tabla.
+- «Mis escuchas» no tiene ranking (cada cual juega con sus canciones), pero un reto hecho con ellas sí.
+- Las reglas solo dejan escribir lo propio y rechazan puntuaciones imposibles (más de 2000 por acierto). Como la puntuación se calcula en el navegador, alguien con maña podría inflarla dentro de ese límite.
+
 ## Ajustes
 
 - **Partida**: por rondas o contrarreloj, número de rondas o tiempo total, tiempo por canción.

@@ -1,0 +1,40 @@
+rules_version = '2';
+// Reglas de Firestore para el ranking de «¿De qué me suena?».
+// Cada persona solo puede escribir lo suyo; cualquiera puede leer el ranking.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfil: nombre visible, si sus partidas son públicas y en qué tablas ha publicado.
+    match /users/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'pub', 'boards'])
+        && validName(request.resource.data.name)
+        && request.resource.data.pub is bool
+        && request.resource.data.boards is list && request.resource.data.boards.size() <= 1000;
+    }
+
+    // Una tabla por fuente + ajustes (o por reto); un documento por persona con su mejor puntuación.
+    match /boards/{board}/scores/{uid} {
+      allow read: if true;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && board.size() <= 40
+        && request.resource.data.keys().hasOnly(['name', 'score', 'hits', 'rounds', 'desc', 'at'])
+        && validName(request.resource.data.name)
+        && request.resource.data.desc is string && request.resource.data.desc.size() <= 120
+        && request.resource.data.rounds is int && request.resource.data.rounds > 0 && request.resource.data.rounds <= 300
+        && request.resource.data.hits is int && request.resource.data.hits >= 0
+        && request.resource.data.hits <= request.resource.data.rounds
+        // como mucho 1000 puntos por acierto, ×2 con el premio según popularidad
+        && request.resource.data.score is int && request.resource.data.score <= request.resource.data.hits * 2000
+        && (request.resource.data.at == request.time
+            // cambiar solo el nombre (al renombrarse) conserva la fecha
+            || (resource != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])));
+    }
+
+    function validName(n) {
+      return n is string && n.size() > 0 && n.size() <= 24;
+    }
+  }
+}
