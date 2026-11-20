@@ -159,7 +159,7 @@ footer a{color:var(--muted)}
       <div class="ask">¿Con qué canciones?</div>
       <div class="src" id="srcSeg">
         <button data-v="user"><i>🎧</i>Mis escuchas</button>
-        <button data-v="tag"><i>🏷️</i>Un estilo</button>
+        <button data-v="tag"><i>🏷️</i>Estilos</button>
         <button data-v="geo"><i>🌍</i>Un país</button>
         <button data-v="artist"><i>🎤</i>Artistas</button>
         <button data-v="chart"><i>🔥</i>Éxitos</button>
@@ -184,7 +184,7 @@ footer a{color:var(--muted)}
         </div>
       </div>
       <div data-src="tag" class="lf">
-        <label>Estilo o década (etiqueta de Last.fm)<input id="tagIn" placeholder="80s, rock, flamenco…" autocapitalize="off" spellcheck="false"></label>
+        <label>Uno o varios estilos o décadas (etiquetas de Last.fm), separados por comas<input id="tagIn" placeholder="80s, synthpop, ebm…" autocapitalize="off" spellcheck="false"></label>
         <div class="chips" id="tagChips"></div>
       </div>
       <div data-src="geo" class="lf">
@@ -467,8 +467,11 @@ bindRange("sTotal", "total"); bindRange("sPenalty", "penalty"); bindRange("sWeig
 
 /* ---------- De dónde salen las canciones ---------- */
 const SOURCES = ["user", "tag", "geo", "artist", "chart", "deezer"];
-const TAGS = ["80s", "90s", "70s", "00s", "rock", "pop", "indie", "hip-hop", "electronic", "jazz", "metal", "punk", "soul", "flamenco", "latin", "reggaeton"];
+// [texto del botón, etiqueta de Last.fm]: «20s» allí son los años veinte de 1900, así que el botón pide 2020s
+const TAGS = ["60s", "70s", "80s", "90s", "00s", "10s", ["20s", "2020s"], "rock", "pop", "indie", "hip-hop", "jazz", "metal", "punk", "soul", "funk", "disco",
+  "techno", "house", "electro", "idm", "ebm", "synthpop", "ambient", "flamenco", "latin"].map(t => typeof t === "string" ? [t, t] : t);
 let src = SOURCES.includes(store.get("dqms_src")) ? store.get("dqms_src") : "user";
+const tagList = () => [...new Set($("tagIn").value.split(",").map(t => t.trim().toLowerCase()).filter(Boolean))];
 const artistList = () => [...new Map($("artistIn").value.split(",").map(a => a.trim()).filter(Boolean).map(a => [nk(a), a])).values()];
 const dzId = () => (/(?:playlist\/|^)(\d{3,})\s*$/.exec($("dzIn").value.trim().split(/[?#]/)[0]) || [])[1] || "";
 function setSrc(v){
@@ -479,9 +482,16 @@ function setSrc(v){
   updateLabel();
 }
 document.querySelectorAll("#srcSeg button").forEach(b => b.onclick = e => { e.preventDefault(); setSrc(b.dataset.v); });
-TAGS.forEach(t => {
-  const b = document.createElement("button"); b.textContent = t;
-  b.onclick = e => { e.preventDefault(); $("tagIn").value = t; updateLabel(); };
+// tocar un estilo lo añade a la mezcla o lo quita
+TAGS.forEach(([txt, tag]) => {
+  const b = document.createElement("button"); b.textContent = txt; b.dataset.tag = tag;
+  if (txt !== tag) b.title = tag;
+  b.onclick = e => {
+    e.preventDefault();
+    const l = tagList();
+    $("tagIn").value = (l.includes(tag) ? l.filter(x => x !== tag) : [...l, tag]).join(", ");
+    updateLabel();
+  };
   $("tagChips").append(b);
 });
 $("tagIn").oninput = $("artistIn").oninput = $("dzIn").oninput = $("geoIn").onchange = updateLabel;
@@ -492,12 +502,12 @@ function periodLabel(){
 }
 // cada fuente tiene su récord; la de usuario conserva el formato de antes
 function updateLabel(){
-  const tag = $("tagIn").value.trim().toLowerCase();
-  document.querySelectorAll("#tagChips button").forEach(b => b.classList.toggle("active", b.textContent === tag));
+  const tags = tagList();
+  document.querySelectorAll("#tagChips button").forEach(b => b.classList.toggle("active", tags.includes(b.dataset.tag)));
   const u = $("lfUser").value.trim().toLowerCase();
   lfLabel = {
     user: u && `${u}_${periodLabel()}`,
-    tag: tag && `tag:${tag}`,
+    tag: tags.length ? `tag:${[...tags].sort().join("+")}` : "",
     geo: `geo:${$("geoIn").value}`,
     artist: artistList().map(nk).sort().join("+") && `artist:${artistList().map(nk).sort().join("+")}`,
     chart: "chart",
@@ -569,14 +579,20 @@ async function loadTracks(n){
       list.sort((a, b) => b.plays - a.plays);
     } else list = await lfList({ method: "user.gettoptracks", user, period }, "toptracks", n, 500);
   } else if (src === "tag") {
-    const tag = $("tagIn").value.trim();
-    list = await lfList({ method: "tag.gettoptracks", tag }, "tracks", n);
-    // los estilos pequeños tienen pocas canciones etiquetadas: se completan con lo más escuchado de sus artistas
-    if (list.length < n) {
-      const a = (await lfq({ method: "tag.gettopartists", tag, limit: 20 })).topartists?.artist || [];
-      if (a.length) list.push(...await artistsTop(a.map(x => x.name), n - list.length));
-    }
-    if (!list.length) throw new Error(`No hay canciones con la etiqueta «${tag}» en Last.fm. Prueba con otra (en inglés suele haber más).`);
+    // varios estilos se mezclan a partes iguales (canciones con todas las etiquetas a la vez apenas hay)
+    const tags = tagList(), per = Math.ceil(n / tags.length);
+    const lists = await Promise.all(tags.map(async tag => {
+      const l = await lfList({ method: "tag.gettoptracks", tag }, "tracks", per);
+      // los estilos pequeños tienen pocas canciones etiquetadas: se completan con lo más escuchado de sus artistas
+      if (l.length < per) {
+        const a = (await lfq({ method: "tag.gettopartists", tag, limit: 20 })).topartists?.artist || [];
+        if (a.length) l.push(...await artistsTop(a.map(x => x.name), per - l.length));
+      }
+      return l;
+    }));
+    missing = tags.filter((_, i) => !lists[i].length);
+    list = interleave(lists);
+    if (!list.length) throw new Error(`No hay canciones con ${tags.length > 1 ? "esas etiquetas" : `la etiqueta «${tags[0]}»`} en Last.fm. Prueba con otra (en inglés suele haber más).`);
     list.forEach(t => t.plays = 0);   // Last.fm no da escuchas por etiqueta
   } else if (src === "geo") list = await lfList({ method: "geo.gettoptracks", country: $("geoIn").value }, "tracks", n);
   else if (src === "chart") list = await lfList({ method: "chart.gettoptracks" }, "tracks", n);
@@ -662,7 +678,7 @@ async function startClicked(){
   const user = $("lfUser").value.trim();
   if (src === "user" && (need(user, "Escribe un usuario de Last.fm", $("lfUser")) ||
       need($("lfPeriod").value !== "rango" || ($("lfFrom").value && $("lfTo").value && $("lfFrom").value <= $("lfTo").value), "Elige dos fechas, la primera antes que la segunda"))) return;
-  if (src === "tag" && need($("tagIn").value.trim(), "Escribe un estilo o toca uno de los de abajo", $("tagIn"))) return;
+  if (src === "tag" && need(tagList().length, "Escribe un estilo o toca uno de los de abajo", $("tagIn"))) return;
   if (src === "artist" && need(artistList().length, "Escribe al menos un artista", $("artistIn"))) return;
   if (src === "deezer" && need(dzId(), "Pega el enlace de una lista de Deezer (el que termina en /playlist/ y un número)", $("dzIn"))) return;
   missing = [];
@@ -698,7 +714,7 @@ async function startClicked(){
     if (src === "user") {
       q.set("user", user); q.set("period", $("lfPeriod").value);
       if ($("lfPeriod").value === "rango") { q.set("from", $("lfFrom").value); q.set("to", $("lfTo").value); }
-    } else if (src === "tag") q.set("tag", $("tagIn").value.trim());
+    } else if (src === "tag") q.set("tag", tagList().join(","));
     else if (src === "geo") q.set("country", $("geoIn").value);
     else if (src === "artist") q.set("artist", artistList().join(","));
     else if (src === "chart") q.set("chart", "1");
@@ -706,7 +722,7 @@ async function startClicked(){
     history.replaceState(null, "", "?" + q);
     playsUnit = { user: "escuchas", geo: "oyentes en el país" }[src] || "escuchas en Last.fm";
     $("aviso").classList.add("hidden");
-    if (missing.length) $("err").textContent = `No encontré a ${missing.map(m => `«${m}»`).join(", ")}; juegas con el resto.`;
+    if (missing.length) $("err").textContent = `No encontré ${src === "tag" ? "canciones de" : "a"} ${missing.map(m => `«${m}»`).join(", ")}; juegas con el resto.`;
     startGame(true);
   } catch (e) {
     $("aviso").classList.add("hidden");
