@@ -11,14 +11,14 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
 <style>
 :root{
-  --bg:#0f0f14; --panel:#1a1a23; --panel2:#24242f; --text:#f2f2f5; --muted:#9a9aab;
-  --accent:#ffb02e; --ok:#2ecc71; --bad:#ff4d5e; --radius:14px;
+  --bg:#001c59; --panel:#0a2a6b; --panel2:#1d3f87; --text:#f2f4fa; --muted:#a3b2d4;
+  --accent:#ffffff; --ok:#2ecc71; --bad:#ff4d5e; --radius:14px;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
 header{width:100%;max-width:560px;padding:20px 16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
-h1,.brand{margin:0;font-family:"Bungee",system-ui,sans-serif;font-weight:400;letter-spacing:.04em;line-height:1.1;color:var(--accent);text-shadow:0 2px 0 #7a4f00,0 0 18px #ffb02e44;text-wrap:balance}
+h1,.brand{margin:0;font-family:"Bungee",system-ui,sans-serif;font-weight:400;letter-spacing:.04em;line-height:1.1;color:var(--accent);text-shadow:0 2px 0 #000d33,0 0 18px #ffffff33;text-wrap:balance}
 h1{font-size:clamp(1.4rem,6vw,2rem)}
 .stats{display:flex;gap:14px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.95rem}
 .stats span{white-space:nowrap}
@@ -39,7 +39,7 @@ p,h2,.result{text-wrap:pretty}
 .vinyl::after{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 30deg,#ffffff00 0 20%,#ffffff14 25%,#ffffff00 30% 70%,#ffffff10 75%,#ffffff00 80%)}
 .stage.playing .vinyl{animation-play-state:running}
 .label{position:absolute;inset:31%;border-radius:50%;background:var(--accent);display:grid;place-items:center;overflow:hidden;z-index:1;box-shadow:0 0 0 3px #0006}
-.label span{font-family:"Bungee",system-ui;font-size:clamp(2rem,9vw,3rem);color:#1a1205}
+.label span{font-family:"Bungee",system-ui;font-size:clamp(2rem,9vw,3rem);color:#001c59}
 .label img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s}
 .stage.revealed .label img.ok{opacity:1}
 .stage .loading{position:absolute;left:0;right:0;bottom:-30px;text-align:center;color:var(--muted);font-size:.9rem;cursor:default}
@@ -78,13 +78,13 @@ p,h2,.result{text-wrap:pretty}
 .btn{display:block;margin:12px auto 0;background:var(--bg);color:#fff;border:2px solid var(--panel2);border-radius:999px;padding:12px 28px;font:inherit;font-weight:700;cursor:pointer}
 .btn:hover,.btn:focus-visible{border-color:#ffffff55;outline:none}
 .btn:disabled{opacity:.6;cursor:wait}
-.btn.prim{background:var(--accent);color:#1a1205;border-color:var(--accent);font-size:1.1rem;padding:14px 40px}
+.btn.prim{background:var(--accent);color:#001c59;border-color:var(--accent);font-size:1.1rem;padding:14px 40px}
 #scope{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
-.screen{background:rgba(26,26,35,.86);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid #ffffff14;border-radius:var(--radius);padding:36px 32px;text-align:center;box-shadow:0 20px 60px #000a}
+.screen{background:rgba(10,42,107,.86);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid #ffffff14;border-radius:var(--radius);padding:36px 32px;text-align:center;box-shadow:0 20px 60px #000a}
 @media (max-width:520px){.screen{padding:28px 18px}}
 .screen .brand{font-size:clamp(2rem,9vw,3.2rem);margin:0 0 18px}
 .screen h2{margin:0 0 12px;font-size:clamp(1.8rem,5vw,2.4rem)}
-.screen p{color:#c4c4d0;margin:10px auto;font-size:1.05rem;max-width:34em;text-wrap:balance}
+.screen p{color:#d0d8ec;margin:10px auto;font-size:1.05rem;max-width:34em;text-wrap:balance}
 .big{font-size:3rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;margin:8px 0}
 .seg{display:inline-flex;flex-wrap:wrap;background:var(--bg);border-radius:999px;padding:4px;gap:4px}
 .seg button{background:none;border:0;color:var(--muted);font:inherit;padding:6px 12px;font-size:.88rem;border-radius:999px;cursor:pointer}
@@ -101,7 +101,7 @@ p,h2,.result{text-wrap:pretty}
 .lf .hint{margin:0;font-size:.8rem;color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips button{background:var(--panel2);color:var(--text);border:0;border-radius:999px;padding:4px 10px;font:inherit;font-size:.8rem;cursor:pointer}
-.chips button:hover,.chips button.active{background:var(--accent);color:#1a1205}
+.chips button:hover,.chips button.active{background:var(--accent);color:#001c59}
 .lf input,.lf select{background:var(--bg);color:var(--text);border:2px solid var(--panel2);border-radius:10px;padding:10px 12px;font:inherit;width:100%}
 .lf input:focus,.lf select:focus{outline:none;border-color:var(--accent)}
 .lf .fechas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -348,7 +348,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 function scopeResize(){
   scope.dpr = Math.min(2, devicePixelRatio || 1);
   scope.cv.width = innerWidth * scope.dpr; scope.cv.height = innerHeight * scope.dpr;
-  scope.g.fillStyle = "#0f0f14"; scope.g.fillRect(0, 0, scope.cv.width, scope.cv.height);
+  scope.g.fillStyle = "#001c59"; scope.g.fillRect(0, 0, scope.cv.width, scope.cv.height);
   if (reduceMotion.matches || !scope.raf) scopeFrame(true);
 }
 // hay que crearlo dentro de un clic; si el navegador no deja, el juego sigue sin osciloscopio
@@ -367,7 +367,7 @@ function scopeInit(){
 function scopeFrame(still){
   const { g, cv, dpr } = scope, w = cv.width, h = cv.height;
   // rastro: cada fotograma tapa un poco el anterior en vez de borrarlo
-  g.fillStyle = still || S.bg !== "scope" ? "#0f0f14" : "rgba(15,15,20,.3)";   // las barras se borran del todo: el pico ya hace de rastro
+  g.fillStyle = still || S.bg !== "scope" ? "#001c59" : "rgba(0,28,89,.3)";   // las barras se borran del todo: el pico ya hace de rastro
   g.fillRect(0, 0, w, h);
   const live = !!scope.an && !still;
   if (S.bg === "scope") drawWave(g, w, h, dpr, live && !audio.paused);
@@ -390,8 +390,8 @@ function drawWave(g, w, h, dpr, live){
     i ? g.lineTo(x, y) : g.moveTo(x, y);
   }
   g.lineJoin = "round";
-  g.strokeStyle = "rgba(255,176,46,.07)"; g.lineWidth = 9 * dpr; g.stroke();   // brillo
-  g.strokeStyle = "rgba(255,176,46,.35)"; g.lineWidth = 2 * dpr; g.stroke();
+  g.strokeStyle = "rgba(255,255,255,.07)"; g.lineWidth = 9 * dpr; g.stroke();   // brillo
+  g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 2 * dpr; g.stroke();
 }
 // bandas en escala logarítmica de 40 Hz a 16 kHz, como un ecualizador gráfico
 function drawBars(g, w, h, dpr, live){
@@ -418,12 +418,12 @@ function drawBars(g, w, h, dpr, live){
   for (let b = 0; b < nb; b++) {
     const v = vals[b] ** 1.6, bh = Math.max(2 * dpr, v * maxH), x = gap + b * (bw + gap);
     const grad = g.createLinearGradient(0, base - bh, 0, base);
-    grad.addColorStop(0, "rgba(255,176,46,.28)"); grad.addColorStop(1, "rgba(255,176,46,.04)");
+    grad.addColorStop(0, "rgba(255,255,255,.28)"); grad.addColorStop(1, "rgba(255,255,255,.04)");
     g.fillStyle = grad;
     g.fillRect(x, base - bh, bw, bh);
     // marca de pico que cae despacio
     scope.peaks[b] = Math.max(bh, scope.peaks[b] - 1.5 * dpr);
-    g.fillStyle = "rgba(255,176,46,.45)";
+    g.fillStyle = "rgba(255,255,255,.45)";
     g.fillRect(x, base - scope.peaks[b] - 3 * dpr, bw, 2 * dpr);
   }
 }
