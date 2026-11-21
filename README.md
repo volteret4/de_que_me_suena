@@ -6,7 +6,7 @@ Juego web: suena un trozo de una canción y hay que acertar cuál es entre 4 opc
   - *Mis escuchas*: `user.getTopTracks` de Last.fm (semana, mes, 3/6/12 meses o todas) o `user.getWeeklyTrackChart` entre dos fechas.
   - *Estilos*: `tag.getTopTracks` de una o varias etiquetas, mezcladas a partes iguales; si una etiqueta tiene pocas canciones, se completa con lo más escuchado de sus artistas principales (`tag.getTopArtists`).
   - *Un país*: `geo.getTopTracks`.
-  - *Artistas*: `artist.getTopTracks` de uno o varios artistas, mezclados.
+  - *Artistas*: `artist.getTopTracks` de uno o varios artistas, mezclados. Antes de jugar, cada entrada se busca con `artist.search` y se queda en un solo artista exacto. Si hay duda (otro artista que contiene el nombre es más escuchado, como «sabina» → Joaquín Sabina, o uno diez veces más escuchado sugiere una errata), se ofrecen las opciones con sus oyentes y un botón para saltar esa entrada.
   - *Éxitos*: `chart.getTopTracks`, lo más escuchado en todo Last.fm.
   - *Lista de Deezer*: cualquier lista pública por su enlace; trae los fragmentos incluidos.
 - **Audio**: fragmentos de 30 s de Deezer (JSONP) y, si no hay, de iTunes.

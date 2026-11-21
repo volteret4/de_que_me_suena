@@ -160,6 +160,13 @@ details.settings summary::before{content:"⚙️ "}
 .rank small{grid-column:2/4;color:var(--muted);font-size:.75rem;margin-top:-2px}
 .reto{background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:12px 14px;margin:16px auto 0;max-width:400px}
 .reto p{margin:4px 0!important;font-size:.95rem!important}
+.pick{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:#000a}
+.pickbox{background:var(--panel);border:2px solid var(--panel2);border-radius:var(--radius);padding:16px;width:min(420px,100%);max-height:90vh;overflow:auto;text-align:center}
+.pickbox p{margin:0 0 12px}
+.pickopts{display:grid;gap:8px;margin-bottom:12px}
+.pickopt{display:flex;justify-content:space-between;align-items:baseline;gap:12px;background:var(--bg);color:var(--text);border:2px solid var(--panel2);border-radius:10px;padding:10px 14px;font:inherit;text-align:left;cursor:pointer}
+.pickopt:hover,.pickopt:focus-visible{border-color:var(--accent);outline:none}
+.pickopt small{color:var(--muted);white-space:nowrap}
 .lnk{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:.85rem;cursor:pointer;padding:4px}
 body.in-reto #lfForm,body.in-reto #settings{display:none}
 .share{display:flex;gap:8px;max-width:400px;margin:18px auto 0}
@@ -664,13 +671,84 @@ async function lfList(params, key, n, per = 200){
 const interleave = lists => { const out = []; for (let i = 0; lists.some(l => i < l.length); i++) lists.forEach(l => i < l.length && out.push(l[i])); return out; };
 async function artistsTop(names, n){
   const per = Math.max(10, Math.ceil(n / names.length));
-  const res = await Promise.allSettled(names.map(artist => lfList({ method: "artist.gettoptracks", artist, autocorrect: 1 }, "toptracks", per, 100)));
+  // los nombres ya son exactos (de pickArtists o de tag.getTopArtists): la autocorrección cambiaría «Sabina» por otra cosa
+  const res = await Promise.allSettled(names.map(artist => lfList({ method: "artist.gettoptracks", artist, autocorrect: 0 }, "toptracks", per, 100)));
   const ok = res.filter(r => r.status === "fulfilled").map(r => r.value);
   if (!ok.length) throw res[0].reason;
   missing = res.map((r, i) => r.status === "rejected" ? names[i] : null).filter(Boolean);   // si falta alguno se avisa, pero se juega
   return interleave(ok);
 }
 let missing = [];
+
+/* ---------- elegir artista: un solo artista exacto por entrada ---------- */
+// palabras normalizadas, para saber si «Joaquín Sabina» contiene «sabina» (y no confundir «Queen» con «Queens of the Stone Age»)
+const words = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/[^a-z0-9]+/).filter(Boolean);
+const elegidos = new Map();   // lo que se eligió en esta sesión, para no preguntar dos veces lo mismo
+// devuelve el nombre exacto en Last.fm, null si se salta, o undefined si no existe
+async function pickArtist(name){
+  const k = nk(name);
+  if (elegidos.has(k)) return elegidos.get(k);
+  let found = [];
+  try { found = (await lfq({ method: "artist.search", artist: name, limit: 12 })).results?.artistmatches?.artist || []; } catch {}
+  const seen = new Set(), cands = [];
+  for (const a of found) {
+    const c = { name: a.name, listeners: +a.listeners || 0 };
+    if (!seen.has(nk(c.name)) && (c.listeners || nk(c.name) === k)) { seen.add(nk(c.name)); cands.push(c); }
+  }
+  if (!cands.length) return undefined;
+  const q = words(name);
+  const exact = cands.find(c => nk(c.name) === k);
+  const related = cands.filter(c => c !== exact && q.every(w => words(c.name).includes(w)));
+  const rival = Math.max(0, ...related.map(c => c.listeners));
+  const top = Math.max(...cands.map(c => c.listeners));
+  // sin dudas: el nombre exacto existe, ninguno que lo contenga es más escuchado
+  // y no hay otro diez veces más escuchado (una errata: «radiohed» existe, pero buscabas Radiohead)
+  if (exact && exact.listeners >= rival && exact.listeners * 10 >= top) return exact.name;
+  if (!exact && cands.length === 1) return cands[0].name;
+  const big = exact ? cands.filter(c => c.listeners > exact.listeners * 10) : [];
+  const opts = (exact || related.length ? [...new Set([exact, ...related, ...big])].filter(Boolean) : cands)
+    .sort((a, b) => b.listeners - a.listeners).slice(0, 6);
+  const pick = await chooseArtist(name, opts);
+  elegidos.set(k, pick);
+  return pick;
+}
+const fmtOyentes = n => n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(".", ",")} M` : n >= 1e3 ? `${Math.round(n / 1e3)} mil` : String(n);
+function chooseArtist(name, opts){
+  return new Promise(done => {
+    const ov = document.createElement("div");
+    ov.className = "pick";
+    ov.innerHTML = `<div class="pickbox" role="dialog" aria-modal="true" aria-labelledby="pickT">
+      <p id="pickT">¿A quién te refieres con <b></b>?</p><div class="pickopts"></div>
+      <button class="lnk" data-skip>Saltar este artista</button></div>`;
+    ov.querySelector("b").textContent = `«${name}»`;
+    const box = ov.querySelector(".pickopts");
+    const close = v => { ov.remove(); removeEventListener("keydown", esc); done(v); };
+    const esc = e => { if (e.key === "Escape") close(null); };
+    for (const o of opts) {
+      const b = document.createElement("button");
+      b.className = "pickopt";
+      b.innerHTML = `<span></span><small>${fmtOyentes(o.listeners)} oyentes</small>`;
+      b.firstChild.textContent = o.name;
+      b.onclick = () => close(o.name);
+      box.append(b);
+    }
+    ov.querySelector("[data-skip]").onclick = () => close(null);
+    addEventListener("keydown", esc);
+    document.body.append(ov);
+    box.firstChild.focus();
+  });
+}
+// resuelve la lista del campo y la deja escrita con los nombres exactos
+async function pickArtists(){
+  const out = [], notFound = [];
+  for (const name of artistList()) {
+    const r = await pickArtist(name);
+    if (r === undefined) notFound.push(name);
+    else if (r && !out.some(x => nk(x) === nk(r))) out.push(r);
+  }
+  if (out.length) $("artistIn").value = out.join(", ");
+  return { out, notFound };
+}
 async function fromDeezerList(id, n){
   const out = [];
   for (let index = 0; out.length < n; index += 100) {
@@ -842,7 +920,16 @@ async function startClicked(){
     $("aviso").classList.remove("hidden");
   }
   try {
+    let notFound = [];
+    if (src === "artist") {
+      btn.textContent = "Buscando artistas…";
+      const r = await pickArtists();
+      notFound = r.notFound;
+      if (!r.out.length) throw new Error(notFound.length ? `No encuentro a ${notFound.map(m => `«${m}»`).join(", ")} en Last.fm` : "No queda ningún artista: los has saltado todos.");
+      btn.textContent = "Cargando canciones…";
+    }
     const list = await loadTracks(S.pool);
+    missing.push(...notFound);
     if (list.length < 4) throw new Error(src === "user" ? "Ese usuario no tiene suficientes canciones escuchadas en ese periodo (mínimo 4)." : "Ahí hay muy pocas canciones (mínimo 4).");
     pool = list;
     btn.textContent = "Buscando fragmentos…";
